@@ -74,7 +74,38 @@ NON_PERSON_WORDS = {
     # General corporate / system
     "confidential", "internal", "restricted", "public", "draft", "version", "ver",
     "code", "ref", "reference", "id", "identifier", "number", "no", "male", "female",
-    "executive", "briefing"
+    "executive", "briefing",
+    # Contact and communication labels
+    "email", "mail", "e-mail", "emails", "mailbox", "cell", "phone", "telephone", "tel", "mobile",
+    "fax", "contact", "contacts", "communication", "calling",
+    # Location, address & geography labels
+    "location", "locations", "address", "addresses", "city", "state", "country", "pincode", "pin",
+    "zipcode", "zip", "postal", "residence", "native", "nationality", "region", "zone",
+    # Web, social & digital profile labels
+    "website", "web", "url", "link", "linkedin", "github", "portfolio", "blog", "twitter",
+    "profile", "profiles", "bio", "biography",
+    # Resume, CV, and document section headings
+    "resume", "resumes", "cv", "curriculum", "vitae", "summary", "objective", "experience",
+    "experiences", "education", "educational", "academics", "academic", "skills", "skill",
+    "expertise", "competencies", "competency", "projects", "project", "certifications",
+    "certification", "certified", "licenses", "license", "achievements", "achievement",
+    "awards", "award", "honors", "honor", "publications", "publication", "patents", "patent",
+    "references", "reference", "referees", "referee", "professional", "background",
+    "qualifications", "qualification", "history", "employment", "work", "working", "job",
+    "jobs", "career", "careers", "activities", "activity", "interests", "interest",
+    "hobbies", "hobby", "languages", "language", "declaration", "declarations",
+    # Corporate hierarchy & executive title acronyms
+    "dgm", "gm", "agm", "vp", "avp", "svp", "evp", "ceo", "cto", "cfo", "coo", "cio", "ciso",
+    "cmo", "cro", "hr", "mgr", "director", "president"
+}
+
+# Corporate & organizational suffixes to distinguish organizations from person names
+ORG_SUFFIX_WORDS = {
+    "inc", "incorporated", "corp", "corporation", "llc", "llp", "ltd", "limited",
+    "pvt", "private", "gmbh", "co", "company", "enterprises", "holdings",
+    "technologies", "solutions", "systems", "services", "software", "bank",
+    "air", "airlines", "airways", "hospital", "college", "university", "school",
+    "institute", "foundation", "group", "industries", "motors", "labs", "laboratory"
 }
 
 # Known nationalities, demonyms, religions, and political affiliations (true NORP entities)
@@ -114,6 +145,9 @@ def is_valid_person_entity(ent_text: str) -> bool:
     cleaned = ent_text.strip()
     if len(cleaned) < 2 or len(cleaned) > 60:
         return False
+    # Person names never span multiple lines
+    if "\n" in cleaned or "\r" in cleaned:
+        return False
     # Person names never contain numbers (e.g. '7 Kg', 'Gate 4')
     if re.search(r"\d", cleaned):
         return False
@@ -129,6 +163,9 @@ def is_valid_person_entity(ent_text: str) -> bool:
     # If ANY word in the candidate is a known non-person word, reject immediately
     if any(w.lower() in NON_PERSON_WORDS for w in words):
         return False
+    # If any word in the candidate is an organization suffix, reject
+    if any(w.lower() in ORG_SUFFIX_WORDS for w in words):
+        return False
     # If the combined normalized phrase is in the blocklist
     if cleaned.lower().replace(" ", "").replace("-", "") in NON_PERSON_WORDS:
         return False
@@ -136,6 +173,26 @@ def is_valid_person_entity(ent_text: str) -> bool:
     if len(words) == 1 and (len(words[0]) < 3 or not words[0].istitle()):
         return False
     return True
+
+
+def is_standalone_name_line(line: str) -> bool:
+    """Validate whether a dedicated standalone line represents a personal candidate name."""
+    cleaned = line.strip()
+    if "\n" in cleaned or "\r" in cleaned:
+        return False
+    words = re.findall(r"[A-Za-z]+", cleaned)
+    if not (2 <= len(words) <= 4):
+        return False
+    # Each word must be either titlecased, an uppercase initial, or all uppercase (for ALL CAPS names)
+    is_title = all(w.istitle() or (len(w) == 1 and w.isupper()) for w in words)
+    is_all_caps = all(w.isupper() and len(w) >= 2 for w in words)
+    if not (is_title or is_all_caps):
+        return False
+    if any(w.lower() in ORG_SUFFIX_WORDS for w in words):
+        return False
+    if any(w.lower() in NON_PERSON_WORDS for w in words):
+        return False
+    return is_valid_person_entity(cleaned)
 
 
 class NERDetector:
@@ -178,9 +235,14 @@ class NERDetector:
             return findings
 
         for ent in doc.ents:
-            ent_text = ent.text.strip()
+            ent_raw = ent.text
+            ent_text = ent_raw.strip()
             if not ent_text or PLACEHOLDER_REGEX.match(ent_text):
                 continue
+
+            leading_ws = len(ent_raw) - len(ent_raw.lstrip())
+            start_char = ent.start_char + leading_ws
+            end_char = start_char + len(ent_text)
 
             # PERSON classification (including Indian/non-Western names misclassified as NORP)
             is_person_label = ent.label_ == "PERSON"
@@ -191,13 +253,13 @@ class NERDetector:
 
                 findings.append(
                     PIIFinding(
-                        finding_id=f"ner_person_{block_order}_{ent.start_char}",
+                        finding_id=f"ner_person_{block_order}_{start_char}",
                         document_id=document_id,
                         file_name=file_name,
                         location=location,
                         block_order=block_order,
-                        start=ent.start_char,
-                        end=ent.end_char,
+                        start=start_char,
+                        end=end_char,
                         text=ent_text,
                         pii_type=PIIType.PERSON,
                         confidence=0.88,
@@ -212,19 +274,19 @@ class NERDetector:
             # GPE / LOC (Geographical entity / Location)
             # Only classify if adjacent to residential or personal address cues
             elif ent.label_ in ("GPE", "LOC"):
-                start_context = max(0, ent.start_char - 35)
-                context_window = text[start_context:ent.start_char].lower()
+                start_context = max(0, start_char - 35)
+                context_window = text[start_context:start_char].lower()
                 address_cues = ["residence", "home", "address", "lives at", "located at", "street"]
                 if any(cue in context_window for cue in address_cues):
                     findings.append(
                         PIIFinding(
-                            finding_id=f"ner_loc_{block_order}_{ent.start_char}",
+                            finding_id=f"ner_loc_{block_order}_{start_char}",
                             document_id=document_id,
                             file_name=file_name,
                             location=location,
                             block_order=block_order,
-                            start=ent.start_char,
-                            end=ent.end_char,
+                            start=start_char,
+                            end=end_char,
                             text=ent_text,
                             pii_type=PIIType.ADDRESS,
                             confidence=0.78,
@@ -239,19 +301,19 @@ class NERDetector:
             # DATE
             # Only classify if preceded by birth or personal cues
             elif ent.label_ == "DATE":
-                start_context = max(0, ent.start_char - 30)
-                context_window = text[start_context:ent.start_char].lower()
+                start_context = max(0, start_char - 30)
+                context_window = text[start_context:start_char].lower()
                 dob_cues = ["birth", "born", "dob", "date of birth"]
                 if any(cue in context_window for cue in dob_cues):
                     findings.append(
                         PIIFinding(
-                            finding_id=f"ner_dob_{block_order}_{ent.start_char}",
+                            finding_id=f"ner_dob_{block_order}_{start_char}",
                             document_id=document_id,
                             file_name=file_name,
                             location=location,
                             block_order=block_order,
-                            start=ent.start_char,
-                            end=ent.end_char,
+                            start=start_char,
+                            end=end_char,
                             text=ent_text,
                             pii_type=PIIType.DATE_OF_BIRTH,
                             confidence=0.89,
@@ -260,6 +322,37 @@ class NERDetector:
                             severity=Severity.MEDIUM,
                             explanation="Date entity identified with preceding birth context.",
                             masked_text=mask_sensitive_value(ent_text, "DATE_OF_BIRTH"),
+                        )
+                    )
+
+        # Dedicated standalone candidate / personal name lines (e.g. 'Vikas Laxman Ahankari')
+        name_line_pattern = re.compile(
+            r"(?m)^[ \t]*((?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z](?:\.|\b|[a-z]+)|[A-Z]{2,})){1,3})[ \t\r]*$"
+        )
+        for match in name_line_pattern.finditer(text):
+            candidate = match.group(1).strip()
+            if is_standalone_name_line(candidate):
+                start_c = match.start(1)
+                end_c = match.end(1)
+                # Avoid duplicate if a PERSON finding already covers this exact span or a superset
+                if not any(f.start <= start_c and f.end >= end_c for f in findings if f.pii_type == PIIType.PERSON):
+                    findings.append(
+                        PIIFinding(
+                            finding_id=f"ner_name_line_{block_order}_{start_c}",
+                            document_id=document_id,
+                            file_name=file_name,
+                            location=location,
+                            block_order=block_order,
+                            start=start_c,
+                            end=end_c,
+                            text=candidate,
+                            pii_type=PIIType.PERSON,
+                            confidence=0.94,
+                            confidence_level=ConfidenceLevel.HIGH,
+                            detection_method=["NER"],
+                            severity=Severity.HIGH,
+                            explanation="Personal candidate name identified on dedicated header line.",
+                            masked_text=mask_sensitive_value(candidate, "PERSON"),
                         )
                     )
 

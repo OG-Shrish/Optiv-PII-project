@@ -63,13 +63,13 @@ CONTEXT_RULES = [
         Severity.MEDIUM,
         "Preceded by explicit Date of Birth keyword label.",
     ),
-    # Contact / Passenger / Person Name Cues (e.g. 'Passenger: Shrish', 'Contact: John Smith', 'Assigned To: Alice Wong')
+    # Contact / Passenger / Candidate / Person Name Cues (e.g. 'Passenger: Shrish', 'Contact: John Smith', 'Candidate: Vikas Ahankari')
     (
-        re.compile(r"(?i)\b(?:Passenger(?:\s+Name)?|Name|Full\s+Name|First\s+Name|Traveler(?:\s+Name)?|Traveller(?:\s+Name)?|Customer(?:\s+Name)?|Guest(?:\s+Name)?|Contact(?:\s+Person)?|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator|Doctor|Patient|Attendee)\s*[:=-][ \t]*([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){0,3})"),
+        re.compile(r"(?i)\b(?:Candidate(?:\s+Name)?|Applicant(?:\s+Name)?|Passenger(?:\s+Name)?|Name|Full\s+Name|First\s+Name|Traveler(?:\s+Name)?|Traveller(?:\s+Name)?|Customer(?:\s+Name)?|Guest(?:\s+Name)?|Contact(?:\s+Person)?|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator|Doctor|Patient|Attendee)\s*[:=-][ \t]*([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){0,3})"),
         PIIType.PERSON,
         0.95,
         Severity.HIGH,
-        "Person name preceded by organizational role, ticket header, or passenger label.",
+        "Person name preceded by organizational role, ticket header, passenger, or candidate label.",
     ),
     # Honorific / Salutation Person Name Cues (e.g. 'Mr. Shrish', 'Dr. Watson', 'Shri Shrish')
     (

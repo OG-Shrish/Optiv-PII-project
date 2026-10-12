@@ -198,4 +198,32 @@ def test_indian_names_and_single_names_detected():
     assert "Ashish" in names
 
 
+def test_resume_candidate_name_and_contact_labels():
+    """Ensure dedicated resume candidate name lines are detected and contact labels are preserved."""
+    engine = PIIEngine()
+    resume_text = (
+        "Vikas Laxman Ahankari\n"
+        "DGM Sales and Marketing\n\n"
+        "Email: vikas.ahankari@rediffmail.com   Cell: +91 9876543210 Location: PUNE\n\n"
+        "Professional Profile\n"
+    )
+    findings = engine.detect_raw_text(resume_text)
 
+    finding_map = {f.text: f.pii_type for f in findings}
+
+    # Full candidate name must be detected as PERSON
+    assert "Vikas Laxman Ahankari" in finding_map
+    assert finding_map["Vikas Laxman Ahankari"] == PIIType.PERSON
+
+    # Labels and job titles must NEVER be classified as PII
+    assert "Email" not in finding_map
+    assert "Cell" not in finding_map
+    assert "Location" not in finding_map
+    assert "DGM Sales and Marketing" not in finding_map
+    assert "Professional Profile" not in finding_map
+
+    # Actual contact information must be detected
+    assert "vikas.ahankari@rediffmail.com" in finding_map
+    assert finding_map["vikas.ahankari@rediffmail.com"] == PIIType.EMAIL
+    assert "+91 9876543210" in finding_map
+    assert finding_map["+91 9876543210"] == PIIType.PHONE
