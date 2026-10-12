@@ -1,0 +1,132 @@
+"""Context-based PII detection rules.
+
+Identifies PII when preceded by business evidence label indicators (e.g., 'Employee ID:',
+'Contact:', 'DOB:', etc.) and boosts detection confidence.
+"""
+import re
+from typing import List
+
+from models.schemas import PIIFinding, PIIType, Severity, ConfidenceLevel
+from utils.helpers import mask_sensitive_value
+
+PLACEHOLDER_REGEX = re.compile(
+    r"^\[(PERSON|EMAIL|PHONE|EMPLOYEE_ID|GOVERNMENT_ID|ADDRESS|DATE_OF_BIRTH|CREDIT_CARD|IP_ADDRESS|OTHER_PII)_\d+\]$"
+)
+
+# Rule definitions: (Regex Pattern, PII Type, Confidence, Severity, Explanation)
+CONTEXT_RULES = [
+    # Employee ID Cues
+    (
+        re.compile(r"(?i)\b(?:Employee\s+(?:ID|Id|Number|No\.?)|Emp\s*#|Staff\s+ID)\s*[:=-]?\s*([A-Za-z0-9_-]{3,15})"),
+        PIIType.EMPLOYEE_ID,
+        0.98,
+        Severity.HIGH,
+        "Preceded by explicit employee identifier keyword label.",
+    ),
+    # Government ID Cues
+    (
+        re.compile(r"(?i)\b(?:Government\s+ID|Govt\s+ID|National\s+ID|Passport(?:\s+No\.?)?|Tax\s+ID)\s*[:=-]?\s*([A-Za-z0-9_-]{4,20})"),
+        PIIType.GOVERNMENT_ID,
+        0.98,
+        Severity.CRITICAL,
+        "Preceded by explicit government/national ID label.",
+    ),
+    # Date of Birth Cues
+    (
+        re.compile(r"(?i)\b(?:Date\s+of\s+Birth|DOB|Birth\s+Date|Born\s+on)\s*[:=-]?\s*(\d{1,4}[-/\.]\d{1,2}[-/\.]\d{1,4}|[A-Za-z]+\s+\d{1,2},?\s+\d{4})"),
+        PIIType.DATE_OF_BIRTH,
+        0.96,
+        Severity.MEDIUM,
+        "Preceded by explicit Date of Birth keyword label.",
+    ),
+    # Contact / Person Name Cues (e.g. 'Contact: John Smith', 'Assigned To: Alice Wong')
+    (
+        re.compile(r"(?i)\b(?:Contact|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator)\s*[:=-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})"),
+        PIIType.PERSON,
+        0.95,
+        Severity.HIGH,
+        "Person name preceded by organizational role or contact label.",
+    ),
+    # Email with Label
+    (
+        re.compile(r"(?i)\b(?:Email(?:\s+Address)?)\s*[:=-]?\s*([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"),
+        PIIType.EMAIL,
+        0.99,
+        Severity.HIGH,
+        "Email address with explicit contextual label header.",
+    ),
+    # Phone with Label
+    (
+        re.compile(r"(?i)\b(?:Phone|Mobile|Tel|Telephone|Cell(?:\s+Number)?)\s*[:=-]?\s*(\+?[\d\s().-]{7,20})"),
+        PIIType.PHONE,
+        0.98,
+        Severity.HIGH,
+        "Phone number with explicit telephone/mobile keyword label.",
+    ),
+    # Address with Label
+    (
+        re.compile(r"(?i)\b(?:Address|Billing\s+Address|Home\s+Address|Residence)\s*[:=-]\s*([0-9]{1,5}\s+[A-Za-z0-9\s,.-]{10,60})"),
+        PIIType.ADDRESS,
+        0.88,
+        Severity.MEDIUM,
+        "Postal or residential location preceded by address label.",
+    ),
+]
+
+
+class ContextDetector:
+    """Detects PII entities based on contextual prefix keywords and cues."""
+
+    def detect(
+        self,
+        text: str,
+        document_id: str,
+        file_name: str,
+        location: str,
+        block_order: int
+    ) -> List[PIIFinding]:
+        findings: List[PIIFinding] = []
+        if not text or not text.strip():
+            return findings
+
+        for regex, pii_type, confidence, severity, explanation in CONTEXT_RULES:
+            for match in regex.finditer(text):
+                # group(1) contains the target PII entity
+                try:
+                    val = match.group(1).strip()
+                    start_char = match.start(1)
+                    end_char = match.end(1)
+                except IndexError:
+                    val = match.group(0).strip()
+                    start_char = match.start(0)
+                    end_char = match.end(0)
+
+                if not val or PLACEHOLDER_REGEX.match(val):
+                    continue
+
+                conf_level = (
+                    ConfidenceLevel.HIGH if confidence >= 0.90
+                    else (ConfidenceLevel.MEDIUM if confidence >= 0.70 else ConfidenceLevel.LOW)
+                )
+
+                findings.append(
+                    PIIFinding(
+                        finding_id=f"ctx_{pii_type.value.lower()}_{block_order}_{start_char}",
+                        document_id=document_id,
+                        file_name=file_name,
+                        location=location,
+                        block_order=block_order,
+                        start=start_char,
+                        end=end_char,
+                        text=val,
+                        pii_type=pii_type,
+                        confidence=confidence,
+                        confidence_level=conf_level,
+                        detection_method=["CONTEXT"],
+                        severity=severity,
+                        explanation=explanation,
+                        masked_text=mask_sensitive_value(val, pii_type.value),
+                    )
+                )
+
+        return findings
