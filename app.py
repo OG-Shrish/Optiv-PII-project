@@ -25,7 +25,7 @@ from reporting.metrics import calculate_structure_retention
 
 # Page Configuration
 st.set_page_config(
-    page_title="PII Security Gateway | Enterprise Gatekeeper",
+    page_title="PII Security Gateway",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -376,6 +376,18 @@ CORPORATE_LIGHT_CSS = """
         position: absolute !important;
         left: -9999px !important;
     }
+
+    /* More Explanation Card */
+    .more-explanation-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--brand-blue);
+        border-radius: 8px;
+        padding: 22px 26px;
+        margin-bottom: 22px;
+        box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.04);
+        line-height: 1.6;
+    }
 </style>
 """
 st.markdown(CORPORATE_LIGHT_CSS, unsafe_allow_html=True)
@@ -392,6 +404,8 @@ if "analysis_results" not in st.session_state:
     st.session_state.analysis_results = []
 if "show_original" not in st.session_state:
     st.session_state.show_original = False
+if "show_more" not in st.session_state:
+    st.session_state.show_more = False
 
 
 def format_bytes(size: int) -> str:
@@ -406,16 +420,69 @@ def format_bytes(size: int) -> str:
 # ==============================================================================
 # CORPORATE HEADER
 # ==============================================================================
-st.markdown(
-    """
-    <div class="corporate-header">
-        <div class="header-title-row">
-            <h1 class="header-title">🛡️ OPTIV PII Security Gateway</h1>
+col_title, col_more = st.columns([6, 1])
+
+with col_title:
+    st.markdown(
+        """
+        <div class="corporate-header">
+            <div class="header-title-row">
+                <h1 class="header-title">PII Security Gateway</h1>
+            </div>
         </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col_more:
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    if st.button("More", help="Click to understand how PII Security Gateway works in simple everyday words", use_container_width=True):
+        st.session_state.show_more = not st.session_state.show_more
+
+if st.session_state.show_more:
+    st.markdown(
+        """
+        <div class="more-explanation-card">
+            <h3 style="margin-top: 0; font-size: 18px; color: #0284c7; font-weight: 700;">
+                💡 How Does This Project Work? (In Simple Words)
+            </h3>
+            <p style="font-size: 14px; color: #334155; margin-bottom: 12px;">
+                Think of the <b>PII Security Gateway</b> as an <b>intelligent privacy checkpoint</b> for your documents before you share them with an AI (such as ChatGPT, Claude, or internal language models).
+            </p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px;">
+                <b style="color: #0f172a; font-size: 13.5px;">⚠️ The Real Problem:</b><br>
+                <span style="color: #475569; font-size: 13px;">
+                    When you upload business files (contracts, invoices, employee records, support tickets) to an AI tool, those files often contain private data: real names, personal emails, phone numbers, employee badge IDs, credit cards, or government IDs. Sending that raw data outside your company risks data leaks and breaks strict privacy laws (like GDPR, HIPAA, or CCPA).
+                </span>
+            </div>
+            <h4 style="font-size: 14.5px; color: #0f172a; margin-bottom: 8px; font-weight: 600;">
+                How The Gateway Protects Your Data in 4 Simple Steps:
+            </h4>
+            <ol style="color: #334155; font-size: 13.5px; padding-left: 20px; line-height: 1.7; margin-bottom: 14px;">
+                <li><b>1. Read the Document:</b> You upload a PDF, Word document, PowerPoint presentation, or text file. The gateway extracts all the text and keeps note of where each piece came from (e.g. Page 1, Slide 3, Table 2).</li>
+                <li><b>2. Spot the Private Data (Detection):</b> Like a smart scanner, it automatically spots private details using three methods:
+                    <ul style="margin-top: 4px; margin-bottom: 4px;">
+                        <li><b>Patterns:</b> Recognizes email formats, phone numbers, credit card numbers, and government IDs.</li>
+                        <li><b>Name Recognition:</b> Detects actual person names (e.g. <i>Sarah Connor</i> or <i>John Smith</i>).</li>
+                        <li><b>Context Clues:</b> Identifies labeled keywords like <i>"Employee ID: 10293"</i> or <i>"Contact: Alice"</i>.</li>
+                    </ul>
+                </li>
+                <li><b>3. Smart Replacement (Consistent Redaction):</b> Instead of just putting black bars everywhere, it smartly swaps private data with consistent tags:
+                    <ul style="margin-top: 4px; margin-bottom: 4px;">
+                        <li><i>John Smith</i> becomes <code>[PERSON_001]</code>.</li>
+                        <li><i>john@example.com</i> becomes <code>[EMAIL_001]</code>.</li>
+                        <li>Even if John's name appears 5 times across 3 different slides, he is called <code>[PERSON_001]</code> every single time! This lets the AI understand the story and relationships without ever knowing his real identity.</li>
+                    </ul>
+                </li>
+                <li><b>4. The Double-Check Gate (Validation):</b> Before anything is released, the gateway scans the cleaned text a second time. If even <b>one</b> real piece of private data was missed, the file is immediately <b>BLOCKED ✕</b>. Only when it is 100% clean is it marked <b>SAFE FOR AI ✓</b>.</li>
+            </ol>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 12.5px; color: #64748b;">
+                🔒 <b>100% Local & Safe:</b> Everything runs locally on your machine. Zero data is sent to external servers or third-party AI companies.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ==============================================================================
