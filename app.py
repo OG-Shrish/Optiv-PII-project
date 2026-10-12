@@ -408,10 +408,8 @@ if "show_original" not in st.session_state:
     st.session_state.show_original = False
 if "show_more" not in st.session_state:
     st.session_state.show_more = False
-if "uploader_key" not in st.session_state:
-    st.session_state.uploader_key = 0
-if "last_file_signature" not in st.session_state:
-    st.session_state.last_file_signature = None
+if "last_active_file_signature" not in st.session_state:
+    st.session_state.last_active_file_signature = None
 if "active_sample_file" not in st.session_state:
     st.session_state.active_sample_file = None
 
@@ -530,64 +528,67 @@ else:
     col_upload, col_actions = st.columns([3, 1])
 
     with col_upload:
-        uploaded_file = st.file_uploader(
+        uploaded_files = st.file_uploader(
             "Upload Business Evidence Document (Supported formats: PDF, DOCX, PPTX, TXT)",
             type=["pdf", "docx", "pptx", "txt"],
-            accept_multiple_files=False,
-            key=f"uploader_{st.session_state.uploader_key}",
-            help="Upload a single evidence artifact for pre-LLM PII sanitization inspection.",
+            accept_multiple_files=True,
+            key="evidence_uploader",
+            help="Upload an evidence artifact for pre-LLM PII sanitization inspection.",
         )
 
-    # Automatic State Synchronization:
-    # If a new file is uploaded or if the file was removed via the ✖ button,
-    # immediately clear out any lingering data from the previous file.
-    current_signature = None
-    if uploaded_file is not None:
-        current_signature = f"{uploaded_file.name}_{uploaded_file.size}"
-        if st.session_state.last_file_signature != current_signature:
+    # State Tracking:
+    # Always focus on the most recently uploaded file (or sample).
+    # If a new file is uploaded / added via the [+] option, immediately remove
+    # the old file's data and show results only for the active document.
+    active_file = None
+    if uploaded_files:
+        active_file = uploaded_files[-1]
+        active_signature = f"{active_file.name}_{active_file.size}"
+
+        # When a new file is added or uploaded, clear the old document's data!
+        if st.session_state.get("last_active_file_signature") != active_signature:
             st.session_state.analysis_results = []
-            st.session_state.last_file_signature = current_signature
+            st.session_state.last_active_file_signature = active_signature
             st.session_state.active_sample_file = None
     else:
-        if st.session_state.active_sample_file is None:
-            if st.session_state.last_file_signature is not None:
+        if not st.session_state.get("active_sample_file"):
+            if st.session_state.get("last_active_file_signature") is not None:
                 st.session_state.analysis_results = []
-                st.session_state.last_file_signature = None
+                st.session_state.last_active_file_signature = None
 
     with col_actions:
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         analyze_btn = st.button("⚡ Analyze Document", type="primary", use_container_width=True)
+        load_samples = st.button("📁 Load Sample Document", help="Load pre-built synthetic test document", use_container_width=True)
 
-        has_active_doc = (
-            uploaded_file is not None
-            or st.session_state.active_sample_file is not None
-            or len(st.session_state.analysis_results) > 0
-        )
-
-        if has_active_doc:
-            if st.button("🔄 Upload Another File", help="Remove current document and wipe old results to upload a new file", use_container_width=True):
-                st.session_state.uploader_key += 1
+        if load_samples:
+            sample_dir = Path(__file__).resolve().parent / "sample_documents"
+            sample_file = sample_dir / "Executive_Briefing.pdf"
+            if sample_file.exists():
+                st.session_state.active_sample_file = (sample_file.name, sample_file.read_bytes())
+                st.session_state.last_active_file_signature = f"sample_{sample_file.name}"
                 st.session_state.analysis_results = []
-                st.session_state.last_file_signature = None
-                st.session_state.active_sample_file = None
-                st.rerun()
-        else:
-            load_samples = st.button("📁 Load Sample Document", help="Load pre-built synthetic test document", use_container_width=True)
-            if load_samples:
-                sample_dir = Path(__file__).resolve().parent / "sample_documents"
-                sample_file = sample_dir / "Executive_Briefing.pdf"
-                if sample_file.exists():
-                    st.session_state.active_sample_file = (sample_file.name, sample_file.read_bytes())
-                    st.session_state.last_file_signature = f"sample_{sample_file.name}"
-                    st.session_state.analysis_results = []
-                    st.info(f"Loaded sample evidence: '{sample_file.name}'. Click 'Analyze Document' to inspect.")
+                st.info(f"Loaded sample evidence: '{sample_file.name}'. Click 'Analyze Document' to inspect.")
 
-    # Show active sample notice if active and no upload
-    if st.session_state.active_sample_file is not None and uploaded_file is None:
+    # Informative Status Banner for Active Document
+    if active_file is not None:
+        if len(uploaded_files) > 1:
+            st.markdown(
+                f"""
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-left: 3px solid var(--brand-blue); border-radius: 6px; padding: 10px 14px; margin-top: 6px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
+                    📄 Active Inspected File: <b>{active_file.name}</b> ({format_bytes(active_file.size)})<br>
+                    <span style="font-size: 12px; color: var(--text-muted);">
+                        Previous file data removed. The gateway analyzes and displays findings strictly for the active document.
+                    </span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    elif st.session_state.get("active_sample_file") is not None:
         s_name, s_bytes = st.session_state.active_sample_file
         st.markdown(
             f"""
-            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 14px; margin-top: 6px; font-size: 13px; color: var(--text-secondary);">
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-left: 3px solid var(--brand-blue); border-radius: 6px; padding: 10px 14px; margin-top: 6px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
                 📁 Active Sample Evidence: <b>{s_name}</b> ({format_bytes(len(s_bytes))})
             </div>
             """,
@@ -601,9 +602,9 @@ else:
         pipeline = get_pipeline()
         file_to_process = None
 
-        if uploaded_file is not None:
-            file_to_process = (uploaded_file.name, uploaded_file.getvalue())
-        elif st.session_state.active_sample_file is not None:
+        if active_file is not None:
+            file_to_process = (active_file.name, active_file.getvalue())
+        elif st.session_state.get("active_sample_file") is not None:
             file_to_process = st.session_state.active_sample_file
 
         if not file_to_process:
