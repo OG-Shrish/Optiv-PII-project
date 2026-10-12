@@ -408,6 +408,12 @@ if "show_original" not in st.session_state:
     st.session_state.show_original = False
 if "show_more" not in st.session_state:
     st.session_state.show_more = False
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+if "last_file_signature" not in st.session_state:
+    st.session_state.last_file_signature = None
+if "active_sample_file" not in st.session_state:
+    st.session_state.active_sample_file = None
 
 
 def format_bytes(size: int) -> str:
@@ -524,79 +530,110 @@ else:
     col_upload, col_actions = st.columns([3, 1])
 
     with col_upload:
-        uploaded_files = st.file_uploader(
-            "Upload Business Evidence Documents (Supported formats: PDF, DOCX, PPTX, TXT)",
+        uploaded_file = st.file_uploader(
+            "Upload Business Evidence Document (Supported formats: PDF, DOCX, PPTX, TXT)",
             type=["pdf", "docx", "pptx", "txt"],
-            accept_multiple_files=True,
-            help="Upload single or multiple evidence artifacts for pre-LLM PII sanitization inspection.",
+            accept_multiple_files=False,
+            key=f"uploader_{st.session_state.uploader_key}",
+            help="Upload a single evidence artifact for pre-LLM PII sanitization inspection.",
         )
+
+    # Automatic State Synchronization:
+    # If a new file is uploaded or if the file was removed via the ✖ button,
+    # immediately clear out any lingering data from the previous file.
+    current_signature = None
+    if uploaded_file is not None:
+        current_signature = f"{uploaded_file.name}_{uploaded_file.size}"
+        if st.session_state.last_file_signature != current_signature:
+            st.session_state.analysis_results = []
+            st.session_state.last_file_signature = current_signature
+            st.session_state.active_sample_file = None
+    else:
+        if st.session_state.active_sample_file is None:
+            if st.session_state.last_file_signature is not None:
+                st.session_state.analysis_results = []
+                st.session_state.last_file_signature = None
 
     with col_actions:
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        load_samples = st.button("📁 Load Sample Evidence", help="Load pre-built synthetic test documents", use_container_width=True)
-        analyze_btn = st.button("⚡ Analyze Documents", type="primary", use_container_width=True)
+        analyze_btn = st.button("⚡ Analyze Document", type="primary", use_container_width=True)
 
-    # Handle Sample Document Pre-loading
-    sample_dir = Path(__file__).resolve().parent / "sample_documents"
-    sample_files_data = []
+        has_active_doc = (
+            uploaded_file is not None
+            or st.session_state.active_sample_file is not None
+            or len(st.session_state.analysis_results) > 0
+        )
 
-    if load_samples and sample_dir.exists():
-        for sample_file in sample_dir.iterdir():
-            if sample_file.suffix.lower() in [".pdf", ".docx", ".pptx", ".txt"]:
-                sample_files_data.append((sample_file.name, sample_file.read_bytes()))
-        st.info(f"Loaded {len(sample_files_data)} sample evidence artifacts. Click 'Analyze Documents' to execute the security gate.")
+        if has_active_doc:
+            if st.button("🔄 Upload Another File", help="Remove current document and wipe old results to upload a new file", use_container_width=True):
+                st.session_state.uploader_key += 1
+                st.session_state.analysis_results = []
+                st.session_state.last_file_signature = None
+                st.session_state.active_sample_file = None
+                st.rerun()
+        else:
+            load_samples = st.button("📁 Load Sample Document", help="Load pre-built synthetic test document", use_container_width=True)
+            if load_samples:
+                sample_dir = Path(__file__).resolve().parent / "sample_documents"
+                sample_file = sample_dir / "Executive_Briefing.pdf"
+                if sample_file.exists():
+                    st.session_state.active_sample_file = (sample_file.name, sample_file.read_bytes())
+                    st.session_state.last_file_signature = f"sample_{sample_file.name}"
+                    st.session_state.analysis_results = []
+                    st.info(f"Loaded sample evidence: '{sample_file.name}'. Click 'Analyze Document' to inspect.")
+
+    # Show active sample notice if active and no upload
+    if st.session_state.active_sample_file is not None and uploaded_file is None:
+        s_name, s_bytes = st.session_state.active_sample_file
+        st.markdown(
+            f"""
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 14px; margin-top: 6px; font-size: 13px; color: var(--text-secondary);">
+                📁 Active Sample Evidence: <b>{s_name}</b> ({format_bytes(len(s_bytes))})
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ==============================================================================
     # PIPELINE EXECUTION
     # ==============================================================================
     if analyze_btn:
         pipeline = get_pipeline()
-        files_to_process = []
+        file_to_process = None
 
-        if uploaded_files:
-            for f in uploaded_files:
-                files_to_process.append((f.name, f.getvalue()))
-        elif sample_files_data:
-            files_to_process = sample_files_data
-        elif sample_dir.exists():
-            for sample_file in sample_dir.iterdir():
-                if sample_file.suffix.lower() in [".pdf", ".docx", ".pptx", ".txt"]:
-                    files_to_process.append((sample_file.name, sample_file.read_bytes()))
+        if uploaded_file is not None:
+            file_to_process = (uploaded_file.name, uploaded_file.getvalue())
+        elif st.session_state.active_sample_file is not None:
+            file_to_process = st.session_state.active_sample_file
 
-        if not files_to_process:
-            st.warning("Please upload one or more documents or load sample evidence before analyzing.")
+        if not file_to_process:
+            st.warning("Please upload a document or load a sample document before analyzing.")
         else:
-            results: List[DocumentAnalysisResult] = []
-            progress_bar = st.progress(0, text="Initializing Pre-LLM Security Gateway pipeline...")
+            fname, fbytes = file_to_process
+            progress_bar = st.progress(0, text=f"Analyzing {fname}...")
             status_box = st.empty()
 
-            for idx, (fname, fbytes) in enumerate(files_to_process):
-                progress_pct = int((idx / len(files_to_process)) * 100)
-                progress_bar.progress(progress_pct, text=f"Processing {fname} ({idx + 1}/{len(files_to_process)})...")
+            status_box.markdown(
+                f"""
+                <div style='background: #ffffff; border: 1px solid #e6e1d6; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #44403c; margin-bottom: 12px;'>
+                    Inspecting <b>{fname}</b>: 
+                    <span style='color: #2563eb; font-weight: 600;'>Extract</span> → 
+                    <span style='color: #2563eb; font-weight: 600;'>Detect</span> → 
+                    <span style='color: #2563eb; font-weight: 600;'>Redact</span> → 
+                    <span style='color: #2563eb; font-weight: 600;'>Re-scan</span> → 
+                    <span style='color: #2563eb; font-weight: 600;'>Validate</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                status_box.markdown(
-                    f"""
-                    <div style='background: #ffffff; border: 1px solid #e6e1d6; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #44403c; margin-bottom: 12px;'>
-                        Inspecting <b>{fname}</b>: 
-                        <span style='color: #2563eb; font-weight: 600;'>Extract</span> → 
-                        <span style='color: #2563eb; font-weight: 600;'>Detect</span> → 
-                        <span style='color: #2563eb; font-weight: 600;'>Redact</span> → 
-                        <span style='color: #2563eb; font-weight: 600;'>Re-scan</span> → 
-                        <span style='color: #2563eb; font-weight: 600;'>Validate</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                res = pipeline.process_document(file_bytes=fbytes, file_name=fname)
-                results.append(res)
-                time.sleep(0.1)
-
+            res = pipeline.process_document(file_bytes=fbytes, file_name=fname)
             progress_bar.progress(100, text="Pipeline processing complete.")
+            time.sleep(0.1)
             status_box.empty()
             progress_bar.empty()
-            st.session_state.analysis_results = results
-            st.success(f"Security gate analysis complete for {len(results)} document(s).")
+            st.session_state.analysis_results = [res]
+            st.success(f"Security gate analysis complete for {fname}.")
 
     # ==============================================================================
     # DASHBOARD DISPLAY
@@ -728,13 +765,20 @@ else:
         # 4. DOCUMENT DETAIL DEEP-DIVE
         st.markdown("<h3 style='margin-bottom: 12px; font-size: 16px;'>Document Deep-Dive & Source Traceability</h3>", unsafe_allow_html=True)
         
-        doc_options = [f"{r.file_name} ({r.security_status.value if hasattr(r.security_status, 'value') else r.security_status})" for r in results]
-        selected_doc_idx = st.selectbox(
-            "Select Document Artifact for Structural Traceability Inspection:",
-            range(len(doc_options)),
-            format_func=lambda i: doc_options[i]
-        )
-        selected_doc = results[selected_doc_idx]
+        if len(results) == 1:
+            selected_doc = results[0]
+            st.markdown(
+                f"<div style='margin-bottom: 14px; font-size: 13px; font-weight: 600; color: var(--text-secondary);'>Inspected Artifact: <span style='color: var(--brand-blue);'>{selected_doc.file_name}</span></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            doc_options = [f"{r.file_name} ({r.security_status.value if hasattr(r.security_status, 'value') else r.security_status})" for r in results]
+            selected_doc_idx = st.selectbox(
+                "Select Document Artifact for Structural Traceability Inspection:",
+                range(len(doc_options)),
+                format_func=lambda i: doc_options[i]
+            )
+            selected_doc = results[selected_doc_idx]
 
         doc_stat_val = selected_doc.security_status.value if hasattr(selected_doc.security_status, "value") else str(selected_doc.security_status)
         if doc_stat_val == SecurityStatus.SANITIZED.value:
