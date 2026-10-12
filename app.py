@@ -1,7 +1,8 @@
 """PII Security Gateway - Pre-LLM Security Gateway & Document Sanitization Pipeline.
 
-Streamlit Application providing local, explainable PII detection, consistent semantic
-redaction, and fail-closed post-redaction validation.
+Enterprise Streamlit application providing local, explainable PII detection,
+consistent semantic redaction, and fail-closed post-redaction validation.
+Light corporate design system tailored for compliance and security teams.
 """
 import io
 import time
@@ -24,196 +25,340 @@ from reporting.metrics import calculate_structure_retention
 
 # Page Configuration
 st.set_page_config(
-    page_title="PII Security Gateway",
+    page_title="PII Security Gateway | Enterprise Gatekeeper",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# Professional Corporate Security Theme CSS
-CUSTOM_CSS = """
+# Professional Corporate Light Theme System CSS
+CORPORATE_LIGHT_CSS = """
 <style>
-    /* Dark Navy & Slate Security Palette */
+    /* Global Typography & Palette */
     :root {
-        --bg-main: #0b132b;
-        --card-bg: #1c2541;
-        --card-border: #2e3a59;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --accent-blue: #38bdf8;
-        --status-safe-bg: #064e3b;
-        --status-safe-text: #34d399;
-        --status-safe-border: #059669;
-        --status-blocked-bg: #7f1d1d;
-        --status-blocked-text: #f87171;
-        --status-blocked-border: #dc2626;
-        --status-review-bg: #78350f;
-        --status-review-text: #fbbf24;
-        --status-review-border: #d97706;
+        --bg-page: #f8fafc;
+        --bg-card: #ffffff;
+        --bg-subtle: #f1f5f9;
+        --border-color: #e2e8f0;
+        --border-focus: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --brand-blue: #0284c7;
+        --brand-blue-hover: #0369a1;
+        --brand-blue-subtle: #e0f2fe;
+        --status-safe-bg: #ecfdf5;
+        --status-safe-border: #a7f3d0;
+        --status-safe-text: #065f46;
+        --status-safe-accent: #059669;
+        --status-blocked-bg: #fef2f2;
+        --status-blocked-border: #fecaca;
+        --status-blocked-text: #991b1b;
+        --status-blocked-accent: #dc2626;
+        --status-review-bg: #fffbeb;
+        --status-review-border: #fde68a;
+        --status-review-text: #92400e;
+        --status-review-accent: #d97706;
     }
 
+    /* Force Light Theme Base */
     .stApp {
-        background-color: #0d1527;
-        color: #f1f5f9;
+        background-color: var(--bg-page) !important;
+        color: var(--text-primary) !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* Header styling */
-    .header-container {
-        background: linear-gradient(135deg, #0b132b 0%, #1c2541 100%);
-        border: 1px solid #2e3a59;
-        border-radius: 8px;
-        padding: 24px 30px;
-        margin-bottom: 24px;
+    /* Standardized Container Headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.3px;
     }
-    .header-title {
-        font-size: 26px;
-        font-weight: 700;
-        color: #ffffff;
-        letter-spacing: -0.5px;
-        margin-bottom: 6px;
+
+    /* Corporate Header Card */
+    .corporate-header {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 24px 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+    }
+    .header-title-row {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
         gap: 12px;
+        margin-bottom: 6px;
+    }
+    .header-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
     }
     .header-subtitle {
         font-size: 14px;
-        color: #94a3b8;
+        color: var(--text-secondary);
         margin-bottom: 12px;
     }
-    .security-badge {
+    .header-security-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         padding: 4px 10px;
-        background-color: #1e293b;
-        border: 1px solid #334155;
+        background-color: var(--brand-blue-subtle);
+        border: 1px solid #bae6fd;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
-        color: #38bdf8;
+        color: var(--brand-blue-hover);
         letter-spacing: 0.5px;
         text-transform: uppercase;
     }
+    .header-principle {
+        font-size: 12px;
+        color: var(--brand-blue);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
 
-    /* Metric Cards */
-    .metric-card {
-        background-color: #162035;
-        border: 1px solid #28354f;
+    /* Clean Metric Cards */
+    .metric-card-clean {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 18px 20px;
-        text-align: left;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
-    .metric-label {
-        font-size: 12px;
+    .metric-title {
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: #94a3b8;
-        margin-bottom: 8px;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
         font-weight: 600;
+        margin-bottom: 8px;
     }
-    .metric-value {
-        font-size: 28px;
+    .metric-number {
+        font-size: 30px;
         font-weight: 700;
-        color: #ffffff;
-        line-height: 1.2;
+        line-height: 1.1;
+        color: var(--text-primary);
     }
+    .metric-number-blue { color: var(--brand-blue); }
+    .metric-number-green { color: var(--status-safe-accent); }
+    .metric-number-red { color: var(--status-blocked-accent); }
+    .metric-number-amber { color: var(--status-review-accent); }
 
-    /* Status Pills */
-    .status-pill {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-weight: 700;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-    }
-    .status-sanitized {
-        background-color: #064e3b;
-        color: #34d399;
-        border: 1px solid #059669;
-    }
-    .status-blocked {
-        background-color: #7f1d1d;
-        color: #f87171;
-        border: 1px solid #dc2626;
-    }
-    .status-review {
-        background-color: #78350f;
-        color: #fbbf24;
-        border: 1px solid #d97706;
-    }
-
-    /* Content Boxes */
-    .content-box {
-        background-color: #121b2d;
-        border: 1px solid #23304a;
+    /* Corporate Status Alert Banners */
+    .alert-banner-sanitized {
+        background-color: var(--status-safe-bg);
+        border: 1px solid var(--status-safe-border);
         border-radius: 6px;
-        padding: 16px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+    .alert-banner-sanitized .alert-title {
+        color: var(--status-safe-text);
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .alert-banner-sanitized .alert-desc {
+        color: #047857;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .alert-banner-blocked {
+        background-color: var(--status-blocked-bg);
+        border: 1px solid var(--status-blocked-border);
+        border-radius: 6px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+    .alert-banner-blocked .alert-title {
+        color: var(--status-blocked-text);
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .alert-banner-blocked .alert-desc {
+        color: #b91c1c;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .alert-banner-review {
+        background-color: var(--status-review-bg);
+        border: 1px solid var(--status-review-border);
+        border-radius: 6px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+    .alert-banner-review .alert-title {
+        color: var(--status-review-text);
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .alert-banner-review .alert-desc {
+        color: #b45309;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    /* Document Content Previews */
+    .preview-box {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 18px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 13px;
         line-height: 1.6;
-        color: #cbd5e1;
+        color: #1e293b;
         white-space: pre-wrap;
-        max-height: 420px;
+        max-height: 440px;
         overflow-y: auto;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
     }
 
-    /* Severity badges */
-    .badge-critical {
-        background-color: #450a0a;
-        color: #fca5a5;
-        border: 1px solid #991b1b;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: 700;
+    /* Structured Block Cards */
+    .extracted-block-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--brand-blue);
+        border-radius: 4px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
-    .badge-high {
-        background-color: #431407;
-        color: #fdba74;
-        border: 1px solid #9a3412;
-        padding: 2px 6px;
-        border-radius: 3px;
+    .extracted-block-meta {
         font-size: 11px;
-        font-weight: 700;
-    }
-    .badge-medium {
-        background-color: #3b2d07;
-        color: #fde047;
-        border: 1px solid #854d0e;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-    .badge-low {
-        background-color: #0f2744;
-        color: #93c5fd;
-        border: 1px solid #1e3a8a;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    /* Button adjustments */
-    .stButton > button {
-        background-color: #0284c7;
-        color: #ffffff;
+        color: var(--text-muted);
         font-weight: 600;
-        border: none;
-        border-radius: 6px;
-        padding: 8px 20px;
-        transition: background-color 0.2s;
+        margin-bottom: 6px;
     }
-    .stButton > button:hover {
-        background-color: #0369a1;
-        color: #ffffff;
+    .extracted-block-text {
+        font-size: 13px;
+        color: var(--text-primary);
+        white-space: pre-wrap;
+        line-height: 1.5;
+    }
+
+    /* Empty State Container */
+    .empty-state-box {
+        background-color: var(--bg-card);
+        border: 1px dashed var(--border-focus);
+        border-radius: 8px;
+        padding: 48px 24px;
+        text-align: center;
+        margin-top: 16px;
+    }
+    .empty-state-icon {
+        font-size: 36px;
+        margin-bottom: 14px;
+    }
+    .empty-state-heading {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    .empty-state-text {
+        font-size: 13px;
+        color: var(--text-muted);
+        max-width: 580px;
+        margin: 0 auto 16px auto;
+        line-height: 1.5;
+    }
+    .empty-state-footer {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    /* Button Styling */
+    div.stButton > button:first-child {
+        background-color: var(--brand-blue) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border: 1px solid transparent !important;
+        border-radius: 6px !important;
+        padding: 8px 18px !important;
+        font-size: 13px !important;
+        transition: background-color 0.15s ease-in-out;
+        box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+    }
+    div.stButton > button:first-child:hover {
+        background-color: var(--brand-blue-hover) !important;
+        color: #ffffff !important;
+    }
+
+    /* Secondary / Download Buttons */
+    div.stDownloadButton > button {
+        background-color: #ffffff !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        padding: 8px 16px !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    div.stDownloadButton > button:hover {
+        background-color: var(--bg-subtle) !important;
+        border-color: var(--border-focus) !important;
+        color: var(--brand-blue) !important;
+    }
+
+    /* Streamlit Tabs Polish */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border-radius: 4px 4px 0 0;
+    }
+    .stTabs [aria-selected="true"] {
+        color: var(--brand-blue) !important;
+        font-weight: 600 !important;
+        border-bottom: 2px solid var(--brand-blue) !important;
+    }
+
+    /* Form Controls & Checkbox */
+    .stCheckbox label {
+        font-size: 13px !important;
+        color: var(--text-secondary) !important;
+        font-weight: 500;
+    }
+
+    /* Dataframe Polish */
+    [data-testid="stDataFrame"] {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background-color: #ffffff;
     }
 </style>
 """
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+st.markdown(CORPORATE_LIGHT_CSS, unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -239,20 +384,21 @@ def format_bytes(size: int) -> str:
 
 
 # ==============================================================================
-# HEADER
+# CORPORATE HEADER
 # ==============================================================================
 st.markdown(
     """
-    <div class="header-container">
-        <div class="header-title">
-            <span>🛡️ PII Security Gateway</span>
-            <span class="security-badge">● Local Processing — Zero External AI Call</span>
+    <div class="corporate-header">
+        <div class="header-title-row">
+            <h1 class="header-title">🛡️ OPTIV PII Security Gateway</h1>
+            <span class="header-security-badge">● Local Processing — Zero External AI Call</span>
         </div>
         <div class="header-subtitle">
-            Pre-LLM Security Gateway & Document Sanitization Pipeline • Detect • Classify • Redact • Validate
+            Enterprise Pre-LLM Security Gateway & Document Sanitization Pipeline • Detect • Classify • Redact • Validate
         </div>
-        <div style="font-size: 12px; color: #38bdf8; font-weight: 600;">
-            Security Principle: "NO PII → SAFE FOR DOWNSTREAM AI"
+        <div class="header-principle">
+            <span>Core Security Mandate:</span>
+            <b>"NO PII → SAFE FOR DOWNSTREAM AI"</b>
         </div>
     </div>
     """,
@@ -267,7 +413,7 @@ col_upload, col_actions = st.columns([3, 1])
 
 with col_upload:
     uploaded_files = st.file_uploader(
-        "Upload Business Evidence Documents (Supported: PDF, DOCX, PPTX, TXT)",
+        "Upload Business Evidence Documents (Supported formats: PDF, DOCX, PPTX, TXT)",
         type=["pdf", "docx", "pptx", "txt"],
         accept_multiple_files=True,
         help="Upload single or multiple evidence artifacts for pre-LLM PII sanitization inspection.",
@@ -275,7 +421,7 @@ with col_upload:
 
 with col_actions:
     st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-    load_samples = st.button("📁 Load Sample Evidence", help="Load pre-built synthetic test documents")
+    load_samples = st.button("📁 Load Sample Evidence", help="Load pre-built synthetic test documents", use_container_width=True)
     analyze_btn = st.button("⚡ Analyze Documents", type="primary", use_container_width=True)
 
 # Handle Sample Document Pre-loading
@@ -286,7 +432,7 @@ if load_samples and sample_dir.exists():
     for sample_file in sample_dir.iterdir():
         if sample_file.suffix.lower() in [".pdf", ".docx", ".pptx", ".txt"]:
             sample_files_data.append((sample_file.name, sample_file.read_bytes()))
-    st.info(f"Loaded {len(sample_files_data)} sample evidence artifacts. Click 'Analyze Documents' below.")
+    st.info(f"Loaded {len(sample_files_data)} sample evidence artifacts. Click 'Analyze Documents' to execute the security gate.")
 
 
 # ==============================================================================
@@ -321,13 +467,13 @@ if analyze_btn:
             # Sequential pipeline steps with live status
             status_box.markdown(
                 f"""
-                <div style='background: #162035; padding: 12px; border-radius: 6px; font-size: 13px; color: #94a3b8;'>
-                    Pipeline for <b>{fname}</b>: 
-                    <span style='color: #38bdf8;'>Extract</span> → 
-                    <span style='color: #38bdf8;'>Detect</span> → 
-                    <span style='color: #38bdf8;'>Redact</span> → 
-                    <span style='color: #38bdf8;'>Re-scan</span> → 
-                    <span style='color: #38bdf8;'>Validate</span>
+                <div style='background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #475569; margin-bottom: 12px;'>
+                    Inspecting <b>{fname}</b>: 
+                    <span style='color: #0284c7; font-weight: 600;'>Extract</span> → 
+                    <span style='color: #0284c7; font-weight: 600;'>Detect</span> → 
+                    <span style='color: #0284c7; font-weight: 600;'>Redact</span> → 
+                    <span style='color: #0284c7; font-weight: 600;'>Re-scan</span> → 
+                    <span style='color: #0284c7; font-weight: 600;'>Validate</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -335,13 +481,13 @@ if analyze_btn:
 
             res = pipeline.process_document(file_bytes=fbytes, file_name=fname)
             results.append(res)
-            time.sleep(0.1)  # Minimal pause for smooth UI state update
+            time.sleep(0.1)
 
         progress_bar.progress(100, text="Pipeline processing complete.")
         status_box.empty()
         progress_bar.empty()
         st.session_state.analysis_results = results
-        st.success(f"Analysis complete for {len(results)} document(s).")
+        st.success(f"Security gate analysis complete for {len(results)} document(s).")
 
 
 # ==============================================================================
@@ -353,15 +499,15 @@ if results:
     summary = ReportGenerator.get_summary_metrics(results)
 
     # 1. SUMMARY METRIC CARDS
-    st.markdown("<h4 style='color: #f8fafc; margin-top: 10px; margin-bottom: 16px;'>Security Gate Overview</h4>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-top: 14px; margin-bottom: 14px; font-size: 18px;'>Security Gate Overview</h3>", unsafe_allow_html=True)
     c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div class="metric-label">Documents Analyzed</div>
-                <div class="metric-value">{summary['total_documents']}</div>
+            <div class="metric-card-clean">
+                <div class="metric-title">Documents Analyzed</div>
+                <div class="metric-number">{summary['total_documents']}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -370,9 +516,9 @@ if results:
     with c2:
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div class="metric-label">PII Detected</div>
-                <div class="metric-value" style="color: #38bdf8;">{summary['total_pii_detected']}</div>
+            <div class="metric-card-clean">
+                <div class="metric-title">PII Entities Detected</div>
+                <div class="metric-number metric-number-blue">{summary['total_pii_detected']}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -381,9 +527,9 @@ if results:
     with c3:
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div class="metric-label">High-Risk Findings</div>
-                <div class="metric-value" style="color: #f87171;">{summary['high_risk_findings']}</div>
+            <div class="metric-card-clean">
+                <div class="metric-title">High-Risk Findings</div>
+                <div class="metric-number metric-number-red">{summary['high_risk_findings']}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -392,9 +538,9 @@ if results:
     with c4:
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div class="metric-label">Sanitized (Safe)</div>
-                <div class="metric-value" style="color: #34d399;">{summary['files_sanitized']}</div>
+            <div class="metric-card-clean">
+                <div class="metric-title">Files Sanitized (Safe)</div>
+                <div class="metric-number metric-number-green">{summary['files_sanitized']}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -404,18 +550,18 @@ if results:
         blocked_total = summary['files_blocked'] + summary['files_review_required']
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div class="metric-label">Blocked / Review</div>
-                <div class="metric-value" style="color: #fbbf24;">{blocked_total}</div>
+            <div class="metric-card-clean">
+                <div class="metric-title">Files Blocked / Review</div>
+                <div class="metric-number metric-number-amber">{blocked_total}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
     # 2. PII BREAKDOWN & SEVERITY METRICS
-    st.markdown("<h4 style='color: #f8fafc; margin-bottom: 14px;'>PII Distribution by Category & Severity</h4>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom: 12px; font-size: 16px;'>PII Distribution by Category & Risk Severity</h3>", unsafe_allow_html=True)
     col_type_bd, col_sev_bd = st.columns([2, 1])
 
     with col_type_bd:
@@ -434,16 +580,16 @@ if results:
         if sev_data:
             df_sev = pd.DataFrame(
                 list(sev_data.items()),
-                columns=["Severity", "Count"]
+                columns=["Risk Severity", "Count"]
             ).sort_values(by="Count", ascending=False)
             st.dataframe(df_sev, use_container_width=True, hide_index=True)
         else:
             st.info("No severity metrics available.")
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
     # 3. GLOBAL FINDINGS TABLE
-    st.markdown("<h4 style='color: #f8fafc; margin-bottom: 8px;'>PII Findings & Action Log</h4>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom: 8px; font-size: 16px;'>PII Findings & Action Log</h3>", unsafe_allow_html=True)
 
     col_filter1, col_filter2 = st.columns([3, 1])
     with col_filter2:
@@ -470,10 +616,10 @@ if results:
     else:
         st.info("Zero PII findings across analyzed documents.")
 
-    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
     # 4. DOCUMENT DETAIL DEEP-DIVE
-    st.markdown("<h4 style='color: #f8fafc; margin-bottom: 12px;'>Document Deep-Dive & Source Traceability</h4>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom: 12px; font-size: 16px;'>Document Deep-Dive & Source Traceability</h3>", unsafe_allow_html=True)
     
     doc_options = [f"{r.file_name} ({r.security_status.value if hasattr(r.security_status, 'value') else r.security_status})" for r in results]
     selected_doc_idx = st.selectbox(
@@ -488,9 +634,9 @@ if results:
     if doc_stat_val == SecurityStatus.SANITIZED.value:
         st.markdown(
             f"""
-            <div style="background-color: #064e3b; border: 1px solid #059669; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;">
-                <b style="color: #34d399; font-size: 15px;">✓ STATUS: SANITIZED (SAFE FOR DOWNSTREAM AI)</b><br>
-                <span style="color: #a7f3d0; font-size: 13px;">Validation verified zero residual PII. Content is sanitized and certified safe for LLM context submission.</span>
+            <div class="alert-banner-sanitized">
+                <div class="alert-title">✓ STATUS: SANITIZED (SAFE FOR DOWNSTREAM AI)</div>
+                <div class="alert-desc">Validation verified zero residual PII. Content is sanitized and certified safe for downstream LLM context submission.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -498,9 +644,9 @@ if results:
     elif doc_stat_val == SecurityStatus.BLOCKED.value:
         st.markdown(
             f"""
-            <div style="background-color: #7f1d1d; border: 1px solid #dc2626; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;">
-                <b style="color: #f87171; font-size: 15px;">✕ STATUS: BLOCKED (UNSAFE FOR LLM SUBMISSION)</b><br>
-                <span style="color: #fecaca; font-size: 13px;">Fail-closed security triggered. Residual PII or critical policy violation detected. Submission blocked.</span>
+            <div class="alert-banner-blocked">
+                <div class="alert-title">✕ STATUS: BLOCKED (UNSAFE FOR LLM SUBMISSION)</div>
+                <div class="alert-desc">Fail-closed security triggered. Residual PII or critical policy violation detected. Document is blocked from AI consumption.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -508,9 +654,9 @@ if results:
     else:
         st.markdown(
             f"""
-            <div style="background-color: #78350f; border: 1px solid #d97706; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;">
-                <b style="color: #fbbf24; font-size: 15px;">⚠ STATUS: REVIEW REQUIRED</b><br>
-                <span style="color: #fde68a; font-size: 13px;">Document contains low-confidence signals or unverified scanned pages requiring analyst clearance.</span>
+            <div class="alert-banner-review">
+                <div class="alert-title">⚠ STATUS: REVIEW REQUIRED</div>
+                <div class="alert-desc">Document contains low-confidence signals or unverified scanned pages requiring analyst clearance before release.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -526,11 +672,12 @@ if results:
     ])
 
     with tab_sanitized:
-        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>Sanitized content using consistent transparent semantic tags (e.g. <code>[PERSON_001]</code>, <code>[EMAIL_001]</code>).</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Sanitized content using consistent transparent semantic tags (e.g. <code>[PERSON_001]</code>, <code>[EMAIL_001]</code>).</p>", unsafe_allow_html=True)
         if selected_doc.redaction_result:
-            st.markdown(f'<div class="content-box">{selected_doc.redaction_result.redacted_full_text}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="preview-box">{selected_doc.redaction_result.redacted_full_text}</div>', unsafe_allow_html=True)
             
             # Download Sanitized Content Button
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
             st.download_button(
                 label=f"⬇ Download Sanitized Text ({selected_doc.file_name}.sanitized.txt)",
                 data=selected_doc.redaction_result.redacted_full_text,
@@ -541,7 +688,7 @@ if results:
             st.info("No sanitized output generated.")
 
     with tab_findings:
-        st.markdown(f"<p style='color: #94a3b8; font-size: 13px;'>Detected {len(selected_doc.pii_findings)} PII instances in this document.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: #64748b; font-size: 13px;'>Detected {len(selected_doc.pii_findings)} PII instances in this document.</p>", unsafe_allow_html=True)
         if selected_doc.pii_findings:
             doc_f_rows = []
             for f in selected_doc.pii_findings:
@@ -560,7 +707,7 @@ if results:
             st.info("No PII detected in this document.")
 
     with tab_traceability:
-        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>Source Traceability Matrix: Explaining exact source location, detector corroboration, and semantic tag assignment.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Source Traceability Matrix: Explaining exact source location, detector corroboration, and semantic tag assignment.</p>", unsafe_allow_html=True)
         if selected_doc.pii_findings and selected_doc.redaction_result:
             traceability_data = []
             for f in selected_doc.pii_findings:
@@ -579,39 +726,63 @@ if results:
             st.info("No traceability items to display.")
 
     with tab_validation:
-        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>Post-Redaction Validation Audit (Re-scan of sanitized text blocks to ensure fail-closed security).</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Post-Redaction Validation Audit (Re-scan of sanitized text blocks to ensure fail-closed security).</p>", unsafe_allow_html=True)
         if selected_doc.validation_result:
             vr = selected_doc.validation_result
-            st.write(f"**Validation Verdict:** {vr.status.value}")
-            st.write(f"**Passed Security Gate:** {'YES' if vr.passed else 'NO'}")
-            st.write(f"**Residual PII Detected:** {len(vr.residual_findings)} items")
-            st.write(f"**Policy Message:** {vr.validation_message}")
-
-            # Structure retention score
+            
             orig_blocks = selected_doc.blocks
             red_blocks = selected_doc.redaction_result.redacted_blocks if selected_doc.redaction_result else []
             retention_pct = calculate_structure_retention(orig_blocks, red_blocks)
-            st.write(f"**Structural Block Retention:** {retention_pct}% (Original structure boundaries maintained)")
+
+            st.markdown(
+                f"""
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 18px; margin-bottom: 14px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Validation Verdict:</td>
+                            <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">{vr.status.value}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Passed Security Gate:</td>
+                            <td style="padding: 8px 0; font-weight: 700; color: {'#059669' if vr.passed else '#dc2626'};">{'YES (PASSED)' if vr.passed else 'NO (FAILED)'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Residual PII Detected:</td>
+                            <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">{len(vr.residual_findings)} items</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Structural Block Retention:</td>
+                            <td style="padding: 8px 0; font-weight: 700; color: #0284c7;">{retention_pct}% (Original structure boundaries maintained)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Enforced Security Policy:</td>
+                            <td style="padding: 8px 0; color: #334155;">{vr.validation_message}</td>
+                        </tr>
+                    </table>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         else:
             st.info("Validation records unavailable.")
 
     with tab_original:
-        st.markdown("<p style='color: #94a3b8; font-size: 13px;'>Original extracted blocks with structural boundary metadata (Kept strictly local).</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Original extracted blocks with structural boundary metadata (Kept strictly local).</p>", unsafe_allow_html=True)
         for b in selected_doc.blocks:
             st.markdown(
                 f"""
-                <div style="background: #162035; border-left: 3px solid #38bdf8; padding: 8px 12px; margin-bottom: 8px; border-radius: 4px;">
-                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;"><b>Location:</b> {b.location} | <b>Type:</b> {b.block_type} | <b>Order:</b> {b.order}</div>
-                    <div style="font-size: 13px; color: #f1f5f9; white-space: pre-wrap;">{b.text}</div>
+                <div class="extracted-block-card">
+                    <div class="extracted-block-meta">Location: {b.location} | Type: {b.block_type} | Order: {b.order}</div>
+                    <div class="extracted-block-text">{b.text}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
     # 5. AUDIT REPORT EXPORTS
-    st.markdown("<h4 style='color: #f8fafc; margin-bottom: 12px;'>Compliance Audit Reports Export</h4>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom: 12px; font-size: 16px;'>Compliance Audit Reports Export</h3>", unsafe_allow_html=True)
     c_rep1, c_rep2 = st.columns(2)
 
     with c_rep1:
@@ -635,16 +806,16 @@ if results:
         )
 
 else:
-    # Initial clean landing message
+    # Initial Clean Landing State Box
     st.markdown(
         """
-        <div style="background-color: #162035; border: 1px dashed #28354f; border-radius: 8px; padding: 40px; text-align: center; margin-top: 20px;">
-            <div style="font-size: 36px; margin-bottom: 12px;">🛡️</div>
-            <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">Pre-LLM Security Inspection Ready</div>
-            <div style="font-size: 14px; color: #94a3b8; max-width: 600px; margin: 0 auto 20px auto;">
+        <div class="empty-state-box">
+            <div class="empty-state-icon">🛡️</div>
+            <div class="empty-state-heading">Pre-LLM Security Inspection Ready</div>
+            <div class="empty-state-text">
                 Upload business evidence documents (PDF, DOCX, PPTX, TXT) or click <b>Load Sample Evidence</b> above to test the hybrid PII detection, consistent semantic redaction, and fail-closed validation pipeline.
             </div>
-            <div style="font-size: 12px; color: #64748b;">
+            <div class="empty-state-footer">
                 Local computation • Zero telemetry • No external LLM calls • Fail-closed architecture
             </div>
         </div>
