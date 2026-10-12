@@ -1124,20 +1124,9 @@ else:
                 st.session_state.active_view = "visuals"
                 st.session_state.show_more = False
                 st.rerun()
-        c1, c2, c3, c4, c5 = st.columns(5)
+        c1, c2 = st.columns(2)
 
         with c1:
-            st.markdown(
-                f"""
-                <div class="metric-card-clean">
-                    <div class="metric-title">Documents Analyzed</div>
-                    <div class="metric-number">{summary['total_documents']}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with c2:
             st.markdown(
                 f"""
                 <div class="metric-card-clean">
@@ -1148,35 +1137,12 @@ else:
                 unsafe_allow_html=True,
             )
 
-        with c3:
+        with c2:
             st.markdown(
                 f"""
                 <div class="metric-card-clean">
                     <div class="metric-title">High-Risk Findings</div>
                     <div class="metric-number metric-number-red">{summary['high_risk_findings']}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with c4:
-            st.markdown(
-                f"""
-                <div class="metric-card-clean">
-                    <div class="metric-title">Files Sanitized (Safe)</div>
-                    <div class="metric-number metric-number-green">{summary['files_sanitized']}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with c5:
-            blocked_total = summary['files_blocked'] + summary['files_review_required']
-            st.markdown(
-                f"""
-                <div class="metric-card-clean">
-                    <div class="metric-title">Files Blocked / Review</div>
-                    <div class="metric-number metric-number-amber">{blocked_total}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
