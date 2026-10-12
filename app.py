@@ -23,7 +23,6 @@ from models.schemas import (
 )
 from pipeline import GatewayPipeline
 from reporting.report_generator import ReportGenerator
-from reporting.metrics import calculate_structure_retention
 
 # Page Configuration
 st.set_page_config(
@@ -1354,10 +1353,6 @@ else:
             st.markdown("<p style='color: var(--text-muted); font-size: 13px;'>Post-Redaction Validation Audit (Re-scan of sanitized text blocks to ensure fail-closed security).</p>", unsafe_allow_html=True)
             if selected_doc.validation_result:
                 vr = selected_doc.validation_result
-                
-                orig_blocks = selected_doc.blocks
-                red_blocks = selected_doc.redaction_result.redacted_blocks if selected_doc.redaction_result else []
-                retention_pct = calculate_structure_retention(orig_blocks, red_blocks)
 
                 st.markdown(
                     f"""
@@ -1374,10 +1369,6 @@ else:
                             <tr style="border-bottom: 1px solid #f5f2eb;">
                                 <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Residual PII Detected:</td>
                                 <td style="padding: 8px 0; font-weight: 700; color: #1c1917;">{len(vr.residual_findings)} items</td>
-                            </tr>
-                            <tr style="border-bottom: 1px solid #f5f2eb;">
-                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Structural Block Retention:</td>
-                                <td style="padding: 8px 0; font-weight: 700; color: #2563eb;">{retention_pct}% (Original structure boundaries maintained)</td>
                             </tr>
                             <tr>
                                 <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Enforced Security Policy:</td>
