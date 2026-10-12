@@ -13,13 +13,78 @@ PLACEHOLDER_REGEX = re.compile(
     r"^\[(PERSON|EMAIL|PHONE|EMPLOYEE_ID|GOVERNMENT_ID|ADDRESS|DATE_OF_BIRTH|CREDIT_CARD|IP_ADDRESS|OTHER_PII)_\d+\]$"
 )
 
-# Common non-person titles or words that small NER models occasionally misclassify as PERSON
+# Comprehensive non-person words, document labels, travel/airline terms, and measurements
+# that small NER models occasionally misclassify as PERSON
 NON_PERSON_WORDS = {
+    # Determiners, modifiers, structural words
+    "other", "another", "all", "any", "each", "every", "some", "few", "more", "less",
+    "many", "much", "add", "addon", "add-on", "add-ons", "addons", "additional", "added",
+    "extra", "new", "old", "first", "last", "next", "previous", "prior", "total", "subtotal",
+    "net", "gross", "grand", "standard", "basic", "special", "general", "main", "sub",
+    # Document structure & labels
+    "table", "row", "column", "col", "page", "slide", "section", "header", "footer",
+    "paragraph", "item", "items", "list", "status", "type", "category", "class",
+    "description", "details", "detail", "summary", "overview", "introduction",
+    "conclusion", "note", "notes", "notice", "remark", "remarks", "policy", "terms",
+    "condition", "conditions", "rule", "rules", "information", "info", "guidelines",
+    # Travel, airline, transit & ticket terms
+    "passport", "visa", "cabin", "baggage", "luggage", "seat", "seats", "ticket", "tickets",
+    "boarding", "flight", "flights", "gate", "gates", "terminal", "airport", "airports",
+    "airline", "airlines", "airways", "aircraft", "plane", "carrier", "fare", "pnr",
+    "booking", "checkin", "check-in", "security", "customs", "immigration", "transit",
+    "layover", "stopover", "origin", "destination", "arrival", "arrivals", "departure",
+    "departures", "route", "sector", "economy", "business", "premium", "meal", "meals",
+    "beverage", "beverages", "snack", "snacks", "service", "services", "amenity", "amenities",
+    "infant", "child", "adult", "passenger", "traveler", "traveller", "guest", "pass",
+    # Financial and commerce words
+    "price", "prices", "cost", "costs", "amount", "fee", "fees", "charge", "charges",
+    "tax", "taxes", "gst", "vat", "cgst", "sgst", "igst", "discount", "coupon", "voucher",
+    "payment", "paid", "due", "balance", "invoice", "receipt", "bill", "billing", "currency",
+    "usd", "inr", "eur", "gbp",
+    # Units of measurement
+    "kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "g", "gm", "gms", "gram", "grams",
+    "lb", "lbs", "pound", "pounds", "oz", "ounce", "ounces", "l", "ltr", "liter", "liters",
+    "ml", "km", "m", "cm", "mm", "in", "ft",
+    # Temporal & calendar terms
     "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
     "january", "february", "march", "april", "may", "june", "july", "august",
-    "september", "october", "november", "december", "confidential", "internal",
-    "restricted", "public", "draft", "version", "summary", "overview", "introduction"
+    "september", "october", "november", "december", "today", "yesterday", "tomorrow",
+    "date", "time", "day", "days", "month", "months", "year", "years", "hour", "hours",
+    "minute", "minutes", "min", "mins", "sec", "secs",
+    # General corporate / system
+    "confidential", "internal", "restricted", "public", "draft", "version", "ver",
+    "code", "ref", "reference", "id", "identifier", "number", "no", "male", "female",
+    "executive", "briefing"
 }
+
+
+def is_valid_person_entity(ent_text: str) -> bool:
+    """Validate that an NER candidate entity represents a genuine person name."""
+    cleaned = ent_text.strip()
+    if len(cleaned) < 2 or len(cleaned) > 60:
+        return False
+    # Person names never contain numbers (e.g. '7 Kg', 'Gate 4')
+    if re.search(r"\d", cleaned):
+        return False
+    # Reject entity if it contains disallowed symbols
+    if re.search(r"[/\\@#\$%\^\*\+=\<\>~\|_]", cleaned):
+        return False
+    # Genuine person names in any language contain at least one vowel
+    if not re.search(r"[aeiouyAEIOUY]", cleaned):
+        return False
+    words = re.findall(r"[A-Za-z]+", cleaned)
+    if not words:
+        return False
+    # If ANY word in the candidate is a known non-person word, reject immediately
+    if any(w.lower() in NON_PERSON_WORDS for w in words):
+        return False
+    # If the combined normalized phrase is in the blocklist
+    if cleaned.lower().replace(" ", "").replace("-", "") in NON_PERSON_WORDS:
+        return False
+    # Single word names must be at least 3 letters and titlecased
+    if len(words) == 1 and (len(words[0]) < 3 or not words[0].istitle()):
+        return False
+    return True
 
 
 class NERDetector:
@@ -68,11 +133,7 @@ class NERDetector:
 
             # PERSON classification
             if ent.label_ == "PERSON":
-                # Filter out single words that are obviously days, months, or generic labels
-                if ent_text.lower() in NON_PERSON_WORDS or len(ent_text) < 2:
-                    continue
-                # Filter out pure numbers or symbols
-                if re.match(r"^[\d\W]+$", ent_text):
+                if not is_valid_person_entity(ent_text):
                     continue
 
                 findings.append(

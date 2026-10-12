@@ -117,3 +117,21 @@ def test_non_pii_numbers_not_flagged():
     assert "2026" not in flagged_texts
     assert "1500000" not in flagged_texts
     assert "45" not in flagged_texts
+
+
+def test_travel_document_non_person_not_flagged():
+    """Ensure airline ticket terms, travel documents, baggage weights, and table labels are not falsely flagged as PERSON."""
+    ner = NERDetector()
+    if not ner.is_available:
+        return
+    text = "Passenger: Jay Prakash. Details: Passport and Visa required. Cabin baggage: 7 Kg. Ancillary: Other Add."
+    findings = ner.detect(text, "d1", "ticket.txt", "p1", 0)
+
+    person_names = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+    assert "Jay Prakash" in person_names
+    assert "Passport" not in person_names
+    assert "Visa" not in person_names
+    assert "Cabin" not in person_names
+    assert "7 Kg" not in person_names
+    assert "Other Add" not in person_names
+
