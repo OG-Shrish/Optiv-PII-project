@@ -638,7 +638,29 @@ elif st.session_state.get("active_view") == "visuals":
     has_live_results = bool(st.session_state.get("analysis_results"))
     results = st.session_state.get("analysis_results", [])
 
-    if has_live_results:
+    if not has_live_results:
+        st.markdown(
+            """
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-left: 4px solid var(--brand-blue); border-radius: 8px; padding: 24px 28px; margin-bottom: 20px;">
+                <h3 style="margin-top: 0; font-size: 17px; color: var(--text-primary); font-weight: 700;">
+                    📂 No Active Analysis Results
+                </h3>
+                <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 14px;">
+                    Visual analytics and interactive graphs are generated only after an evidence document is uploaded and analyzed.
+                </p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">
+                    Please return to the main dashboard, upload a business document (PDF, DOCX, PPTX, or TXT), and click <b>Analyze Document</b>.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("← Return to Main Dashboard", type="primary", key="back_from_empty_visuals"):
+            st.session_state.active_view = "dashboard"
+            st.session_state.show_more = False
+            st.rerun()
+
+    else:
         active_doc = results[0]
         summary = ReportGenerator.get_summary_metrics(results)
         doc_stat_val = active_doc.security_status.value if hasattr(active_doc.security_status, "value") else str(active_doc.security_status)
@@ -678,107 +700,241 @@ elif st.session_state.get("active_view") == "visuals":
             conf_str = f.confidence_level.value if hasattr(f.confidence_level, "value") else str(f.confidence_level)
             confidence_counter[conf_str] = confidence_counter.get(conf_str, 0) + 1
 
+        # 1. SUMMARY METRIC CARDS
+        c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+        with c_m1:
+            st.markdown(
+                f"""
+                <div class="metric-card-clean">
+                    <div class="metric-title">Total PII Detected</div>
+                    <div class="metric-number metric-number-blue">{total_findings}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c_m2:
+            st.markdown(
+                f"""
+                <div class="metric-card-clean">
+                    <div class="metric-title">High / Critical Risk</div>
+                    <div class="metric-number metric-number-red">{high_risk_count}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c_m3:
+            st.markdown(
+                f"""
+                <div class="metric-card-clean">
+                    <div class="metric-title">PII Categories</div>
+                    <div class="metric-number">{len(type_data)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c_m4:
+            st.markdown(
+                """
+                <div class="metric-card-clean">
+                    <div class="metric-title">Security Gate Pass Rate</div>
+                    <div class="metric-number metric-number-green">100%</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    else:
-        st.markdown(
-            """
-            <div style="background-color: #fcfbf9; border: 1px solid #e6e1d6; border-left: 4px solid var(--brand-blue); border-radius: 6px; padding: 14px 18px; margin-bottom: 20px;">
-                <b style="color: var(--text-primary); font-size: 14px;">ℹ️ Benchmark Enterprise Analytics (Baseline View)</b><br>
-                <span style="color: var(--text-secondary); font-size: 13px;">
-                    No document has been analyzed yet in this session. The interactive graphs below illustrate baseline enterprise telemetry. Return to the dashboard and upload a document to generate live, artifact-specific telemetry.
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        total_findings = 49
-        high_risk_count = 12
-        type_data = {
-            "EMAIL": 14,
-            "PERSON": 12,
-            "PHONE": 8,
-            "EMPLOYEE_ID": 6,
-            "CREDIT_CARD": 4,
-            "IP_ADDRESS": 3,
-            "GOVERNMENT_ID": 2,
-        }
-        sev_data = {
-            "CRITICAL": 4,
-            "HIGH": 8,
-            "MEDIUM": 22,
-            "LOW": 15,
-        }
-        method_counter = {
-            "Pattern Engine (Regex)": 21,
-            "Named Entity Recognition (spaCy)": 16,
-            "Multi-Engine Corroboration": 8,
-            "Context Rules": 4,
-        }
-        confidence_counter = {
-            "HIGH": 34,
-            "MEDIUM": 12,
-            "LOW": 3,
-        }
+        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
+        # 2. ROW 1: PII CATEGORIES & SEVERITY DONUT
+        c_g1, c_g2 = st.columns(2)
 
-    # 1. SUMMARY METRIC CARDS
-    c_m1, c_m2, c_m3, c_m4 = st.columns(4)
-    with c_m1:
-        st.markdown(
-            f"""
-            <div class="metric-card-clean">
-                <div class="metric-title">Total PII Detected</div>
-                <div class="metric-number metric-number-blue">{total_findings}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c_m2:
-        st.markdown(
-            f"""
-            <div class="metric-card-clean">
-                <div class="metric-title">High / Critical Risk</div>
-                <div class="metric-number metric-number-red">{high_risk_count}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c_m3:
-        st.markdown(
-            f"""
-            <div class="metric-card-clean">
-                <div class="metric-title">PII Categories</div>
-                <div class="metric-number">{len(type_data)}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c_m4:
-        st.markdown(
-            """
-            <div class="metric-card-clean">
-                <div class="metric-title">Security Gate Pass Rate</div>
-                <div class="metric-number metric-number-green">100%</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        with c_g1:
+            st.markdown(
+                """
+                <div class="chart-container-card">
+                    <div class="chart-container-title">📊 PII Category Distribution</div>
+                    <div class="chart-container-subtitle">Entities detected across classifications.</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if type_data:
+                category_labels_map = {
+                    "PERSON": "Person Name",
+                    "EMAIL": "Email Address",
+                    "PHONE": "Phone Number",
+                    "EMPLOYEE_ID": "Employee ID",
+                    "GOVERNMENT_ID": "Government ID / SSN",
+                    "ADDRESS": "Physical Address",
+                    "DATE_OF_BIRTH": "Date of Birth",
+                    "CREDIT_CARD": "Credit Card Number",
+                    "IP_ADDRESS": "IP Address",
+                    "OTHER_PII": "Other PII",
+                }
+                cat_names = [category_labels_map.get(k, k.replace("_", " ").title()) for k in type_data.keys()]
+                cat_counts = list(type_data.values())
+                df_plot_cat = pd.DataFrame({"Category": cat_names, "Count": cat_counts}).sort_values(by="Count", ascending=True)
 
-    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+                fig_cat = go.Figure(
+                    go.Bar(
+                        x=df_plot_cat["Count"],
+                        y=df_plot_cat["Category"],
+                        orientation="h",
+                        marker=dict(
+                            color="#2563eb",
+                            line=dict(color="#1d4ed8", width=1),
+                        ),
+                        text=df_plot_cat["Count"],
+                        textposition="outside",
+                        cliponaxis=False,
+                    )
+                )
+                fig_cat = apply_corporate_theme(fig_cat, height=310)
+                fig_cat.update_layout(xaxis_title="Entity Count", yaxis_title=None)
+                st.plotly_chart(fig_cat, use_container_width=True)
+            else:
+                st.info("No PII entities detected.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    # 2. ROW 1: PII CATEGORIES & SEVERITY DONUT
-    c_g1, c_g2 = st.columns(2)
+        with c_g2:
+            st.markdown(
+                """
+                <div class="chart-container-card">
+                    <div class="chart-container-title">🍩 Risk Severity Breakdown</div>
+                    <div class="chart-container-subtitle">Distribution of findings by threat severity level.</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            sev_labels = []
+            sev_counts = []
+            sev_colors = []
+            color_map = {
+                "CRITICAL": "#b91c1c",
+                "HIGH": "#dc2626",
+                "MEDIUM": "#f59e0b",
+                "LOW": "#10b981",
+            }
+            for s_key in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                if s_key in sev_data and sev_data[s_key] > 0:
+                    sev_labels.append(s_key.title())
+                    sev_counts.append(sev_data[s_key])
+                    sev_colors.append(color_map[s_key])
 
-    with c_g1:
+            if sev_counts:
+                fig_sev = go.Figure(
+                    data=[
+                        go.Pie(
+                            labels=sev_labels,
+                            values=sev_counts,
+                            hole=0.6,
+                            marker=dict(colors=sev_colors),
+                            textinfo="label+percent",
+                            hoverinfo="label+value+percent",
+                        )
+                    ]
+                )
+                fig_sev = apply_corporate_theme(fig_sev, height=310)
+                fig_sev.update_layout(
+                    annotations=[
+                        dict(
+                            text=f"<b>{total_findings}</b><br><span style='font-size:11px;color:#78716c;'>Findings</span>",
+                            x=0.5,
+                            y=0.5,
+                            font_size=16,
+                            showarrow=False,
+                        )
+                    ],
+                    showlegend=True,
+                )
+                st.plotly_chart(fig_sev, use_container_width=True)
+            else:
+                st.success("Zero risk detected. Document is completely clean.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 3. ROW 2: MULTI-ENGINE ATTRIBUTION & CONFIDENCE DISTRIBUTION
+        c_g3, c_g4 = st.columns(2)
+
+        with c_g3:
+            st.markdown(
+                """
+                <div class="chart-container-card">
+                    <div class="chart-container-title">⚙️ Multi-Engine Detection Attribution</div>
+                    <div class="chart-container-subtitle">Corroborating detection engines behind identified entities.</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if method_counter:
+                df_method = pd.DataFrame(
+                    list(method_counter.items()),
+                    columns=["Detection Engine", "Count"]
+                ).sort_values(by="Count", ascending=False)
+
+                fig_method = go.Figure(
+                    go.Bar(
+                        x=df_method["Detection Engine"],
+                        y=df_method["Count"],
+                        marker=dict(
+                            color=["#0284c7", "#6366f1", "#8b5cf6", "#0d9488"][:len(df_method)],
+                        ),
+                        text=df_method["Count"],
+                        textposition="outside",
+                    )
+                )
+                fig_method = apply_corporate_theme(fig_method, height=310)
+                fig_method.update_layout(
+                    xaxis_title=None,
+                    yaxis_title="Detections Flagged",
+                    xaxis_tickangle=-15,
+                )
+                st.plotly_chart(fig_method, use_container_width=True)
+            else:
+                st.info("No detection engines triggered.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with c_g4:
+            st.markdown(
+                """
+                <div class="chart-container-card">
+                    <div class="chart-container-title">🎯 Detection Confidence Distribution</div>
+                    <div class="chart-container-subtitle">Certainty levels computed by heuristic and transformer models.</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            conf_labels = ["High (≥90%)", "Medium (70-89%)", "Low (<70%)"]
+            conf_vals = [
+                confidence_counter.get("HIGH", 0),
+                confidence_counter.get("MEDIUM", 0),
+                confidence_counter.get("LOW", 0),
+            ]
+            fig_conf = go.Figure(
+                go.Bar(
+                    x=conf_labels,
+                    y=conf_vals,
+                    marker=dict(
+                        color=["#15803d", "#f59e0b", "#dc2626"],
+                    ),
+                    text=conf_vals,
+                    textposition="outside",
+                )
+            )
+            fig_conf = apply_corporate_theme(fig_conf, height=310)
+            fig_conf.update_layout(
+                xaxis_title=None,
+                yaxis_title="Findings Count",
+            )
+            st.plotly_chart(fig_conf, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 4. ROW 3: CATEGORY & SEVERITY TELEMETRY TABLE
         st.markdown(
             """
             <div class="chart-container-card">
-                <div class="chart-container-title">📊 PII Category Distribution</div>
-                <div class="chart-container-subtitle">Entities detected across classifications.</div>
+                <div class="chart-container-title">📋 Category & Severity Telemetry Table</div>
+                <div class="chart-container-subtitle">Consolidated count of detected items by category and risk level.</div>
             """,
             unsafe_allow_html=True,
         )
         if type_data:
+            summary_rows = []
             category_labels_map = {
                 "PERSON": "Person Name",
                 "EMAIL": "Email Address",
@@ -791,209 +947,37 @@ elif st.session_state.get("active_view") == "visuals":
                 "IP_ADDRESS": "IP Address",
                 "OTHER_PII": "Other PII",
             }
-            cat_names = [category_labels_map.get(k, k.replace("_", " ").title()) for k in type_data.keys()]
-            cat_counts = list(type_data.values())
-            df_plot_cat = pd.DataFrame({"Category": cat_names, "Count": cat_counts}).sort_values(by="Count", ascending=True)
-
-            fig_cat = go.Figure(
-                go.Bar(
-                    x=df_plot_cat["Count"],
-                    y=df_plot_cat["Category"],
-                    orientation="h",
-                    marker=dict(
-                        color="#2563eb",
-                        line=dict(color="#1d4ed8", width=1),
-                    ),
-                    text=df_plot_cat["Count"],
-                    textposition="outside",
-                    cliponaxis=False,
-                )
-            )
-            fig_cat = apply_corporate_theme(fig_cat, height=310)
-            fig_cat.update_layout(xaxis_title="Entity Count", yaxis_title=None)
-            st.plotly_chart(fig_cat, use_container_width=True)
+            for k, cnt in type_data.items():
+                cat_friendly = category_labels_map.get(k, k.replace("_", " ").title())
+                risk = "High" if k in ("CREDIT_CARD", "GOVERNMENT_ID", "EMPLOYEE_ID") else ("Medium" if k in ("PERSON", "EMAIL", "PHONE") else "Low")
+                summary_rows.append({
+                    "PII Classification": cat_friendly,
+                    "Count": cnt,
+                    "Risk Level": risk,
+                    "Action Policy": "Consistent Semantic Redaction",
+                })
+            df_summary_matrix = pd.DataFrame(summary_rows).sort_values(by="Count", ascending=False)
+            st.dataframe(df_summary_matrix, use_container_width=True, hide_index=True)
         else:
-            st.info("No PII entities detected.")
+            st.info("Zero PII detected.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with c_g2:
-        st.markdown(
-            """
-            <div class="chart-container-card">
-                <div class="chart-container-title">🍩 Risk Severity Breakdown</div>
-                <div class="chart-container-subtitle">Distribution of findings by threat severity level.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        sev_labels = []
-        sev_counts = []
-        sev_colors = []
-        color_map = {
-            "CRITICAL": "#b91c1c",
-            "HIGH": "#dc2626",
-            "MEDIUM": "#f59e0b",
-            "LOW": "#10b981",
-        }
-        for s_key in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-            if s_key in sev_data and sev_data[s_key] > 0:
-                sev_labels.append(s_key.title())
-                sev_counts.append(sev_data[s_key])
-                sev_colors.append(color_map[s_key])
-
-        if sev_counts:
-            fig_sev = go.Figure(
-                data=[
-                    go.Pie(
-                        labels=sev_labels,
-                        values=sev_counts,
-                        hole=0.6,
-                        marker=dict(colors=sev_colors),
-                        textinfo="label+percent",
-                        hoverinfo="label+value+percent",
-                    )
-                ]
-            )
-            fig_sev = apply_corporate_theme(fig_sev, height=310)
-            fig_sev.update_layout(
-                annotations=[
-                    dict(
-                        text=f"<b>{total_findings}</b><br><span style='font-size:11px;color:#78716c;'>Findings</span>",
-                        x=0.5,
-                        y=0.5,
-                        font_size=16,
-                        showarrow=False,
-                    )
-                ],
-                showlegend=True,
-            )
-            st.plotly_chart(fig_sev, use_container_width=True)
-        else:
-            st.success("Zero risk detected. Document is completely clean.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # 3. ROW 2: MULTI-ENGINE ATTRIBUTION & CONFIDENCE DISTRIBUTION
-    c_g3, c_g4 = st.columns(2)
-
-    with c_g3:
-        st.markdown(
-            """
-            <div class="chart-container-card">
-                <div class="chart-container-title">⚙️ Multi-Engine Detection Attribution</div>
-                <div class="chart-container-subtitle">Corroborating detection engines behind identified entities.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if method_counter:
-            df_method = pd.DataFrame(
-                list(method_counter.items()),
-                columns=["Detection Engine", "Count"]
-            ).sort_values(by="Count", ascending=False)
-
-            fig_method = go.Figure(
-                go.Bar(
-                    x=df_method["Detection Engine"],
-                    y=df_method["Count"],
-                    marker=dict(
-                        color=["#0284c7", "#6366f1", "#8b5cf6", "#0d9488"][:len(df_method)],
-                    ),
-                    text=df_method["Count"],
-                    textposition="outside",
-                )
-            )
-            fig_method = apply_corporate_theme(fig_method, height=310)
-            fig_method.update_layout(
-                xaxis_title=None,
-                yaxis_title="Detections Flagged",
-                xaxis_tickangle=-15,
-            )
-            st.plotly_chart(fig_method, use_container_width=True)
-        else:
-            st.info("No detection engines triggered.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with c_g4:
-        st.markdown(
-            """
-            <div class="chart-container-card">
-                <div class="chart-container-title">🎯 Detection Confidence Distribution</div>
-                <div class="chart-container-subtitle">Certainty levels computed by heuristic and transformer models.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        conf_labels = ["High (≥90%)", "Medium (70-89%)", "Low (<70%)"]
-        conf_vals = [
-            confidence_counter.get("HIGH", 0),
-            confidence_counter.get("MEDIUM", 0),
-            confidence_counter.get("LOW", 0),
-        ]
-        fig_conf = go.Figure(
-            go.Bar(
-                x=conf_labels,
-                y=conf_vals,
-                marker=dict(
-                    color=["#15803d", "#f59e0b", "#dc2626"],
-                ),
-                text=conf_vals,
-                textposition="outside",
-            )
-        )
-        fig_conf = apply_corporate_theme(fig_conf, height=310)
-        fig_conf.update_layout(
-            xaxis_title=None,
-            yaxis_title="Findings Count",
-        )
-        st.plotly_chart(fig_conf, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # 4. ROW 3: CATEGORY & SEVERITY TELEMETRY TABLE
-    st.markdown(
-        """
-        <div class="chart-container-card">
-            <div class="chart-container-title">📋 Category & Severity Telemetry Table</div>
-            <div class="chart-container-subtitle">Consolidated count of detected items by category and risk level.</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if type_data:
-        summary_rows = []
-        category_labels_map = {
-            "PERSON": "Person Name",
-            "EMAIL": "Email Address",
-            "PHONE": "Phone Number",
-            "EMPLOYEE_ID": "Employee ID",
-            "GOVERNMENT_ID": "Government ID / SSN",
-            "ADDRESS": "Physical Address",
-            "DATE_OF_BIRTH": "Date of Birth",
-            "CREDIT_CARD": "Credit Card Number",
-            "IP_ADDRESS": "IP Address",
-            "OTHER_PII": "Other PII",
-        }
-        for k, cnt in type_data.items():
-            cat_friendly = category_labels_map.get(k, k.replace("_", " ").title())
-            risk = "High" if k in ("CREDIT_CARD", "GOVERNMENT_ID", "EMPLOYEE_ID") else ("Medium" if k in ("PERSON", "EMAIL", "PHONE") else "Low")
-            summary_rows.append({
-                "PII Classification": cat_friendly,
-                "Count": cnt,
-                "Risk Level": risk,
-                "Action Policy": "Consistent Semantic Redaction",
-            })
-        df_summary_matrix = pd.DataFrame(summary_rows).sort_values(by="Count", ascending=False)
-        st.dataframe(df_summary_matrix, use_container_width=True, hide_index=True)
-    else:
-        st.info("Zero PII detected.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    if st.button("← Back to Main Dashboard", type="primary", key="back_from_visuals_bottom"):
-        st.session_state.active_view = "dashboard"
-        st.session_state.show_more = False
-        st.rerun()
+        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        if st.button("← Back to Main Dashboard", type="primary", key="back_from_visuals_bottom"):
+            st.session_state.active_view = "dashboard"
+            st.session_state.show_more = False
+            st.rerun()
 
 else:
     # --------------------------------------------------------------------------
     # MAIN DASHBOARD VIEW
     # --------------------------------------------------------------------------
-    col_title, col_charts, col_more = st.columns([5, 1.4, 1])
+    has_results = bool(st.session_state.get("analysis_results"))
+
+    if has_results:
+        col_title, col_charts, col_more = st.columns([5, 1.4, 1])
+    else:
+        col_title, col_more = st.columns([6, 1])
 
     with col_title:
         st.markdown(
@@ -1007,12 +991,13 @@ else:
             unsafe_allow_html=True,
         )
 
-    with col_charts:
-        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-        if st.button("📊 Visuals", help="View pictorial representations, risk graphs, and visual telemetry", use_container_width=True):
-            st.session_state.active_view = "visuals"
-            st.session_state.show_more = False
-            st.rerun()
+    if has_results:
+        with col_charts:
+            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+            if st.button("📊 Visuals", help="View pictorial representations, risk graphs, and visual telemetry", use_container_width=True):
+                st.session_state.active_view = "visuals"
+                st.session_state.show_more = False
+                st.rerun()
 
     with col_more:
         st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
@@ -1131,7 +1116,15 @@ else:
         summary = ReportGenerator.get_summary_metrics(results)
 
         # 1. SUMMARY METRIC CARDS
-        st.markdown("<h3 style='margin-top: 14px; margin-bottom: 14px; font-size: 18px;'>Security Gate Overview</h3>", unsafe_allow_html=True)
+        col_ov_title, col_ov_btn = st.columns([4, 1.3])
+        with col_ov_title:
+            st.markdown("<h3 style='margin-top: 14px; margin-bottom: 14px; font-size: 18px;'>Security Gate Overview</h3>", unsafe_allow_html=True)
+        with col_ov_btn:
+            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+            if st.button("📊 View Visual Analytics", help="Open visual graphs and analytics for this analyzed document", use_container_width=True, key="btn_view_visuals_overview"):
+                st.session_state.active_view = "visuals"
+                st.session_state.show_more = False
+                st.rerun()
         c1, c2, c3, c4, c5 = st.columns(5)
 
         with c1:
