@@ -298,6 +298,15 @@ CORPORATE_LIGHT_CSS = """
         color: var(--brand-blue) !important;
     }
 
+    /* Only display the latest active file chip; hide any previous file chips */
+    [data-testid="stFileChips"] > div > div:not(:last-child),
+    [data-testid="stFileChips"] > *:first-child > *:not(:last-child),
+    div[data-testid="stFileChips"] > div > div:not(:last-child),
+    [data-testid="stFileUploader"] [data-testid="stFileChip"]:not(:last-child) {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
     /* Streamlit Tabs Polish */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -570,21 +579,8 @@ else:
                 st.session_state.analysis_results = []
                 st.info(f"Loaded sample evidence: '{sample_file.name}'. Click 'Analyze Document' to inspect.")
 
-    # Informative Status Banner for Active Document
-    if active_file is not None:
-        if len(uploaded_files) > 1:
-            st.markdown(
-                f"""
-                <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-left: 3px solid var(--brand-blue); border-radius: 6px; padding: 10px 14px; margin-top: 6px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
-                    📄 Active Inspected File: <b>{active_file.name}</b> ({format_bytes(active_file.size)})<br>
-                    <span style="font-size: 12px; color: var(--text-muted);">
-                        Previous file data removed. The gateway analyzes and displays findings strictly for the active document.
-                    </span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    elif st.session_state.get("active_sample_file") is not None:
+    # Show active sample banner if sample document is active
+    if st.session_state.get("active_sample_file") is not None and not uploaded_files:
         s_name, s_bytes = st.session_state.active_sample_file
         st.markdown(
             f"""
