@@ -377,6 +377,27 @@ CORPORATE_LIGHT_CSS = """
         left: -9999px !important;
     }
 
+    /* Completely Remove Heading Anchor Link Chain Buttons (🔗) */
+    [data-testid="stHeaderActionElements"],
+    div[data-testid="stHeaderActionElements"],
+    [data-testid="stHeadingWithActionElements"] a,
+    [data-testid="stHeadingWithActionElements"] button,
+    a.header-anchor,
+    .header-anchor,
+    .anchor-link,
+    a.anchor-link,
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a,
+    h1 > a, h2 > a, h3 > a, h4 > a, h5 > a, h6 > a {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
     /* More Explanation Card */
     .more-explanation-card {
         background-color: var(--bg-card);
