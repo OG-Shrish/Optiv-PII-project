@@ -1339,7 +1339,6 @@ else:
                 for f in selected_doc.pii_findings:
                     tag = selected_doc.redaction_result.entity_mappings.get(f.text.strip(), "N/A")
                     traceability_data.append({
-                        "Artifact": selected_doc.file_name,
                         "Source Location": f.location,
                         "Detected PII Type": f.pii_type.value if hasattr(f.pii_type, "value") else str(f.pii_type),
                         "Confidence Score": f"{f.confidence * 100:.1f}% ({f.confidence_level.value})",
