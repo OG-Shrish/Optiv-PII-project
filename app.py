@@ -697,7 +697,7 @@ else:
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
         # 3. GLOBAL FINDINGS TABLE
-        st.markdown("<h3 style='margin-bottom: 8px; font-size: 16px;'>PII Findings & Action Log</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-bottom: 8px; font-size: 16px;'>PII Findings Log</h3>", unsafe_allow_html=True)
 
         col_filter1, col_filter2 = st.columns([3, 1])
         with col_filter2:
@@ -715,7 +715,6 @@ else:
                     "Document": f.file_name,
                     "Location": f.location,
                     "Entity (Masked/Reviewed)": display_val,
-                    "Action Taken": f.action,
                 })
 
         if all_findings_rows:
@@ -804,7 +803,6 @@ else:
                         "Confidence": f"{f.confidence * 100:.1f}%",
                         "Method": " + ".join(f.detection_method),
                         "Entity (Masked)": f.masked_text,
-                        "Action": f.action,
                         "Explanation": f.explanation,
                     })
                 st.dataframe(pd.DataFrame(doc_f_rows), use_container_width=True, hide_index=True)
