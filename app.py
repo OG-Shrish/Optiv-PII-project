@@ -391,7 +391,6 @@ st.markdown(
     <div class="corporate-header">
         <div class="header-title-row">
             <h1 class="header-title">🛡️ OPTIV PII Security Gateway</h1>
-            <span class="header-security-badge">● Local Processing — Zero External AI Call</span>
         </div>
     </div>
     """,
