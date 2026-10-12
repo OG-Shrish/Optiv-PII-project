@@ -356,6 +356,26 @@ CORPORATE_LIGHT_CSS = """
         border-radius: 6px;
         background-color: #ffffff;
     }
+
+    /* Completely Remove Floating Element / DataFrame Action Toolbars */
+    [data-testid="stElementToolbar"],
+    [data-testid="stDataFrameToolbar"],
+    .stDataFrameToolbar,
+    [data-testid="StyledFullScreenButton"],
+    button[title="View fullscreen"],
+    button[title="Download as CSV"],
+    button[title="Search"],
+    div[data-testid="stElementToolbar"],
+    div[data-testid="stDataFrameToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        width: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
 </style>
 """
 st.markdown(CORPORATE_LIGHT_CSS, unsafe_allow_html=True)
