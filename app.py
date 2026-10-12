@@ -31,41 +31,50 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Professional Corporate Light Theme System CSS
+# Professional Corporate Warm Light Theme System CSS
 CORPORATE_LIGHT_CSS = """
 <style>
-    /* Global Typography & Palette */
+    /* Global Warm Palette & Typography */
     :root {
-        --bg-page: #f8fafc;
-        --bg-card: #ffffff;
-        --bg-subtle: #f1f5f9;
-        --border-color: #e2e8f0;
-        --border-focus: #cbd5e1;
-        --text-primary: #0f172a;
-        --text-secondary: #475569;
-        --text-muted: #64748b;
-        --brand-blue: #0284c7;
-        --brand-blue-hover: #0369a1;
-        --brand-blue-subtle: #e0f2fe;
-        --status-safe-bg: #ecfdf5;
-        --status-safe-border: #a7f3d0;
-        --status-safe-text: #065f46;
-        --status-safe-accent: #059669;
-        --status-blocked-bg: #fef2f2;
+        --bg-page: #faf8f5;            /* Soft warm alabaster/linen, eliminates harsh glare */
+        --bg-card: #ffffff;            /* Crisp warm white card surfaces */
+        --bg-card-subtle: #fcfbf9;     /* Soft warm white card tint */
+        --bg-subtle: #f5f2eb;          /* Warm stone sand neutral for headers/bars */
+        --bg-subtle-hover: #ece7de;    /* Warm stone hover */
+        --border-color: #e6e1d6;       /* Warm stone border */
+        --border-focus: #cfc8ba;       /* Warm stone border active */
+        --text-primary: #1c1917;       /* Warm obsidian charcoal (Stone-900) */
+        --text-secondary: #44403c;     /* Warm stone slate (Stone-700) */
+        --text-muted: #78716c;         /* Warm stone muted (Stone-500) */
+        --brand-blue: #2563eb;         /* Sophisticated corporate royal sapphire */
+        --brand-blue-hover: #1d4ed8;   /* Deep sapphire hover */
+        --brand-blue-subtle: #eff6ff;  /* Warm ice blue accent */
+        --status-safe-bg: #f0fdf4;     /* Warm emerald/mint tint */
+        --status-safe-border: #bbf7d0;
+        --status-safe-text: #166534;
+        --status-safe-accent: #15803d;
+        --status-blocked-bg: #fef2f2;  /* Warm rose/crimson tint */
         --status-blocked-border: #fecaca;
         --status-blocked-text: #991b1b;
-        --status-blocked-accent: #dc2626;
-        --status-review-bg: #fffbeb;
+        --status-blocked-accent: #b91c1c;
+        --status-review-bg: #fffbeb;   /* Warm honey amber tint */
         --status-review-border: #fde68a;
         --status-review-text: #92400e;
-        --status-review-accent: #d97706;
+        --status-review-accent: #b45309;
     }
 
-    /* Force Light Theme Base */
+    /* Force Warm Light Theme Base */
     .stApp {
         background-color: var(--bg-page) !important;
         color: var(--text-primary) !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* Main Container Padding & Warm Feel */
+    .main .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+        background-color: var(--bg-page) !important;
     }
 
     /* Standardized Container Headings */
@@ -82,7 +91,7 @@ CORPORATE_LIGHT_CSS = """
         border-radius: 8px;
         padding: 18px 24px;
         margin-bottom: 20px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 3px 0 rgba(44, 40, 37, 0.04);
     }
     .header-title-row {
         display: flex;
@@ -109,7 +118,7 @@ CORPORATE_LIGHT_CSS = """
         border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 18px 20px;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        box-shadow: 0 1px 3px 0 rgba(44, 40, 37, 0.03);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -149,7 +158,7 @@ CORPORATE_LIGHT_CSS = """
         margin-bottom: 4px;
     }
     .alert-banner-sanitized .alert-desc {
-        color: #047857;
+        color: #166534;
         font-size: 13px;
         line-height: 1.4;
     }
@@ -168,7 +177,7 @@ CORPORATE_LIGHT_CSS = """
         margin-bottom: 4px;
     }
     .alert-banner-blocked .alert-desc {
-        color: #b91c1c;
+        color: #991b1b;
         font-size: 13px;
         line-height: 1.4;
     }
@@ -187,25 +196,25 @@ CORPORATE_LIGHT_CSS = """
         margin-bottom: 4px;
     }
     .alert-banner-review .alert-desc {
-        color: #b45309;
+        color: #92400e;
         font-size: 13px;
         line-height: 1.4;
     }
 
     /* Document Content Previews */
     .preview-box {
-        background-color: var(--bg-card);
+        background-color: #fdfcfb;
         border: 1px solid var(--border-color);
         border-radius: 6px;
         padding: 18px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 13px;
         line-height: 1.6;
-        color: #1e293b;
+        color: #292524;
         white-space: pre-wrap;
         max-height: 440px;
         overflow-y: auto;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+        box-shadow: inset 0 1px 2px rgba(44, 40, 37, 0.02);
     }
 
     /* Structured Block Cards */
@@ -216,7 +225,7 @@ CORPORATE_LIGHT_CSS = """
         border-radius: 4px;
         padding: 12px 16px;
         margin-bottom: 10px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        box-shadow: 0 1px 2px rgba(44, 40, 37, 0.03);
     }
     .extracted-block-meta {
         font-size: 11px;
@@ -231,7 +240,7 @@ CORPORATE_LIGHT_CSS = """
         line-height: 1.5;
     }
 
-    /* Button Styling */
+    /* Primary & Default Button Styling */
     div.stButton > button:first-child {
         background-color: var(--brand-blue) !important;
         color: #ffffff !important;
@@ -240,8 +249,8 @@ CORPORATE_LIGHT_CSS = """
         border-radius: 6px !important;
         padding: 8px 18px !important;
         font-size: 13px !important;
-        transition: background-color 0.15s ease-in-out;
-        box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+        transition: all 0.15s ease-in-out;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
     }
     div.stButton > button:first-child:hover {
         background-color: var(--brand-blue-hover) !important;
@@ -257,10 +266,34 @@ CORPORATE_LIGHT_CSS = """
         font-weight: 600 !important;
         font-size: 13px !important;
         padding: 8px 16px !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 1px 2px rgba(44, 40, 37, 0.03);
     }
     div.stDownloadButton > button:hover {
         background-color: var(--bg-subtle) !important;
+        border-color: var(--border-focus) !important;
+        color: var(--brand-blue) !important;
+    }
+
+    /* Streamlit File Uploader Warm Polish */
+    [data-testid="stFileUploader"] section {
+        background-color: #ffffff !important;
+        border: 1px dashed var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 14px 18px !important;
+    }
+    [data-testid="stFileUploader"] section:hover {
+        border-color: var(--brand-blue) !important;
+        background-color: #fdfcfb !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background-color: var(--bg-subtle) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+    }
+    [data-testid="stFileUploader"] button:hover {
+        background-color: var(--bg-subtle-hover) !important;
         border-color: var(--border-focus) !important;
         color: var(--brand-blue) !important;
     }
@@ -289,6 +322,13 @@ CORPORATE_LIGHT_CSS = """
         font-size: 13px !important;
         color: var(--text-secondary) !important;
         font-weight: 500;
+    }
+
+    /* Selectbox styling */
+    [data-testid="stSelectbox"] > div > div {
+        background-color: #ffffff !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
     }
 
     /* Dataframe Polish */
@@ -347,7 +387,7 @@ CORPORATE_LIGHT_CSS = """
         border-radius: 8px;
         padding: 24px 28px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 3px 0 rgba(44, 40, 37, 0.04);
         line-height: 1.6;
     }
 </style>
@@ -409,22 +449,22 @@ if st.session_state.get("show_more", False):
     st.markdown(
         """
         <div class="more-explanation-card">
-            <h3 style="margin-top: 0; font-size: 18px; color: #0284c7; font-weight: 700;">
+            <h3 style="margin-top: 0; font-size: 18px; color: var(--brand-blue); font-weight: 700;">
                 💡 How Does This Project Work? (In Simple Words)
             </h3>
-            <p style="font-size: 14px; color: #334155; margin-bottom: 14px;">
+            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 14px;">
                 Think of the <b>PII Security Gateway</b> as an <b>intelligent privacy checkpoint</b> for your documents before you share them with an AI (such as ChatGPT, Claude, or internal language models).
             </p>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;">
-                <b style="color: #0f172a; font-size: 14px;">⚠️ The Real Problem:</b><br>
-                <span style="color: #475569; font-size: 13.5px;">
+            <div style="background-color: #f7f5f0; border: 1px solid #e6e1d6; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;">
+                <b style="color: var(--text-primary); font-size: 14px;">⚠️ The Real Problem:</b><br>
+                <span style="color: var(--text-secondary); font-size: 13.5px;">
                     When employees upload business files (contracts, invoices, employee records, support tickets) to AI tools, those files often contain private data: real names, personal emails, phone numbers, employee badge IDs, credit cards, or government IDs. Sending that raw data outside your company risks data leaks and breaks strict privacy laws (like GDPR, HIPAA, or CCPA).
                 </span>
             </div>
-            <h4 style="font-size: 15px; color: #0f172a; margin-bottom: 10px; font-weight: 600;">
+            <h4 style="font-size: 15px; color: var(--text-primary); margin-bottom: 10px; font-weight: 600;">
                 How The Gateway Protects Your Data in 4 Simple Steps:
             </h4>
-            <ol style="color: #334155; font-size: 13.5px; padding-left: 20px; line-height: 1.7; margin-bottom: 16px;">
+            <ol style="color: var(--text-secondary); font-size: 13.5px; padding-left: 20px; line-height: 1.7; margin-bottom: 16px;">
                 <li><b>1. Read the Document:</b> You upload a PDF, Word document, PowerPoint presentation, or text file. The gateway extracts all the text and keeps note of where each piece came from (e.g. Page 1, Slide 3, Table 2).</li>
                 <li><b>2. Spot the Private Data (Detection):</b> Like a smart scanner, it automatically spots private details using three methods:
                     <ul style="margin-top: 4px; margin-bottom: 4px;">
@@ -442,7 +482,7 @@ if st.session_state.get("show_more", False):
                 </li>
                 <li><b>4. The Double-Check Gate (Validation):</b> Before anything is released, the gateway scans the cleaned text a second time. If even <b>one</b> real piece of private data was missed, the file is immediately <b>BLOCKED ✕</b>. Only when it is 100% clean is it marked <b>SAFE FOR AI ✓</b>.</li>
             </ol>
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 13px; color: #64748b; margin-bottom: 16px;">
+            <div style="border-top: 1px solid #e6e1d6; padding-top: 12px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
                 🔒 <b>100% Local & Safe:</b> Everything runs locally on your machine. Zero data is sent to external servers or third-party AI companies.
             </div>
         </div>
@@ -536,13 +576,13 @@ else:
 
                 status_box.markdown(
                     f"""
-                    <div style='background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #475569; margin-bottom: 12px;'>
+                    <div style='background: #ffffff; border: 1px solid #e6e1d6; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #44403c; margin-bottom: 12px;'>
                         Inspecting <b>{fname}</b>: 
-                        <span style='color: #0284c7; font-weight: 600;'>Extract</span> → 
-                        <span style='color: #0284c7; font-weight: 600;'>Detect</span> → 
-                        <span style='color: #0284c7; font-weight: 600;'>Redact</span> → 
-                        <span style='color: #0284c7; font-weight: 600;'>Re-scan</span> → 
-                        <span style='color: #0284c7; font-weight: 600;'>Validate</span>
+                        <span style='color: #2563eb; font-weight: 600;'>Extract</span> → 
+                        <span style='color: #2563eb; font-weight: 600;'>Detect</span> → 
+                        <span style='color: #2563eb; font-weight: 600;'>Redact</span> → 
+                        <span style='color: #2563eb; font-weight: 600;'>Re-scan</span> → 
+                        <span style='color: #2563eb; font-weight: 600;'>Validate</span>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -738,7 +778,7 @@ else:
         ])
 
         with tab_sanitized:
-            st.markdown("<p style='color: #64748b; font-size: 13px;'>Sanitized content using consistent transparent semantic tags (e.g. <code>[PERSON_001]</code>, <code>[EMAIL_001]</code>).</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: var(--text-muted); font-size: 13px;'>Sanitized content using consistent transparent semantic tags (e.g. <code>[PERSON_001]</code>, <code>[EMAIL_001]</code>).</p>", unsafe_allow_html=True)
             if selected_doc.redaction_result:
                 st.markdown(f'<div class="preview-box">{selected_doc.redaction_result.redacted_full_text}</div>', unsafe_allow_html=True)
                 
@@ -753,7 +793,7 @@ else:
                 st.info("No sanitized output generated.")
 
         with tab_findings:
-            st.markdown(f"<p style='color: #64748b; font-size: 13px;'>Detected {len(selected_doc.pii_findings)} PII instances in this document.</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='color: var(--text-muted); font-size: 13px;'>Detected {len(selected_doc.pii_findings)} PII instances in this document.</p>", unsafe_allow_html=True)
             if selected_doc.pii_findings:
                 doc_f_rows = []
                 for f in selected_doc.pii_findings:
@@ -772,7 +812,7 @@ else:
                 st.info("No PII detected in this document.")
 
         with tab_traceability:
-            st.markdown("<p style='color: #64748b; font-size: 13px;'>Source Traceability Matrix: Explaining exact source location, detector corroboration, and semantic tag assignment.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: var(--text-muted); font-size: 13px;'>Source Traceability Matrix: Explaining exact source location, detector corroboration, and semantic tag assignment.</p>", unsafe_allow_html=True)
             if selected_doc.pii_findings and selected_doc.redaction_result:
                 traceability_data = []
                 for f in selected_doc.pii_findings:
@@ -791,7 +831,7 @@ else:
                 st.info("No traceability items to display.")
 
         with tab_validation:
-            st.markdown("<p style='color: #64748b; font-size: 13px;'>Post-Redaction Validation Audit (Re-scan of sanitized text blocks to ensure fail-closed security).</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: var(--text-muted); font-size: 13px;'>Post-Redaction Validation Audit (Re-scan of sanitized text blocks to ensure fail-closed security).</p>", unsafe_allow_html=True)
             if selected_doc.validation_result:
                 vr = selected_doc.validation_result
                 
@@ -801,27 +841,27 @@ else:
 
                 st.markdown(
                     f"""
-                    <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 18px; margin-bottom: 14px;">
+                    <div style="background-color: #ffffff; border: 1px solid #e6e1d6; border-radius: 6px; padding: 18px; margin-bottom: 14px;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Validation Verdict:</td>
-                                <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">{vr.status.value}</td>
+                            <tr style="border-bottom: 1px solid #f5f2eb;">
+                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Validation Verdict:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: #1c1917;">{vr.status.value}</td>
                             </tr>
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Passed Security Gate:</td>
-                                <td style="padding: 8px 0; font-weight: 700; color: {'#059669' if vr.passed else '#dc2626'};">{'YES (PASSED)' if vr.passed else 'NO (FAILED)'}</td>
+                            <tr style="border-bottom: 1px solid #f5f2eb;">
+                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Passed Security Gate:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: {'#15803d' if vr.passed else '#b91c1c'};">{'YES (PASSED)' if vr.passed else 'NO (FAILED)'}</td>
                             </tr>
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Residual PII Detected:</td>
-                                <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">{len(vr.residual_findings)} items</td>
+                            <tr style="border-bottom: 1px solid #f5f2eb;">
+                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Residual PII Detected:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: #1c1917;">{len(vr.residual_findings)} items</td>
                             </tr>
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Structural Block Retention:</td>
-                                <td style="padding: 8px 0; font-weight: 700; color: #0284c7;">{retention_pct}% (Original structure boundaries maintained)</td>
+                            <tr style="border-bottom: 1px solid #f5f2eb;">
+                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Structural Block Retention:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: #2563eb;">{retention_pct}% (Original structure boundaries maintained)</td>
                             </tr>
                             <tr>
-                                <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Enforced Security Policy:</td>
-                                <td style="padding: 8px 0; color: #334155;">{vr.validation_message}</td>
+                                <td style="padding: 8px 0; color: #78716c; font-weight: 500;">Enforced Security Policy:</td>
+                                <td style="padding: 8px 0; color: #44403c;">{vr.validation_message}</td>
                             </tr>
                         </table>
                     </div>
@@ -832,7 +872,7 @@ else:
                 st.info("Validation records unavailable.")
 
         with tab_original:
-            st.markdown("<p style='color: #64748b; font-size: 13px;'>Original extracted blocks with structural boundary metadata (Kept strictly local).</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: var(--text-muted); font-size: 13px;'>Original extracted blocks with structural boundary metadata (Kept strictly local).</p>", unsafe_allow_html=True)
             for b in selected_doc.blocks:
                 st.markdown(
                     f"""
