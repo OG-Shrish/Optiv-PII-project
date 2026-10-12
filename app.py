@@ -775,49 +775,7 @@ elif st.session_state.get("active_view") == "visuals":
 
     st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-    # 2. PICTORIAL WORKFLOW ARCHITECTURE
-    st.markdown(
-        """
-        <div class="chart-container-card">
-            <div class="chart-container-title">🛡️ Security Gateway Architecture (Pictorial Representation)</div>
-            <div class="chart-container-subtitle">End-to-end local document sanitization pipeline with zero data leakage to external models.</div>
-            <div class="pipeline-step-flow">
-                <div class="pipeline-step-box">
-                    <div class="pipeline-step-number">Step 1</div>
-                    <div class="pipeline-step-label">📄 Ingestion</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">PDF, DOCX, PPTX, TXT</div>
-                </div>
-                <div class="pipeline-arrow-icon">→</div>
-                <div class="pipeline-step-box">
-                    <div class="pipeline-step-number">Step 2</div>
-                    <div class="pipeline-step-label">🔍 Multi-Engine Detection</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Regex + spaCy NLP + Context</div>
-                </div>
-                <div class="pipeline-arrow-icon">→</div>
-                <div class="pipeline-step-box">
-                    <div class="pipeline-step-number">Step 3</div>
-                    <div class="pipeline-step-label">🏷️ Consistent Tagging</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">[PERSON_001], [EMAIL_001]</div>
-                </div>
-                <div class="pipeline-arrow-icon">→</div>
-                <div class="pipeline-step-box">
-                    <div class="pipeline-step-number">Step 4</div>
-                    <div class="pipeline-step-label">🛡️ Zero-Trust Re-scan</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Post-Redaction Validation</div>
-                </div>
-                <div class="pipeline-arrow-icon">→</div>
-                <div class="pipeline-step-box pipeline-step-box-active">
-                    <div class="pipeline-step-number">Step 5</div>
-                    <div class="pipeline-step-label">🚀 Safe LLM Release</div>
-                    <div style="font-size: 11px; color: #166534; margin-top: 4px;">Zero Residual PII</div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # 3. ROW 1: PII CATEGORIES & SEVERITY DONUT
+    # 2. ROW 1: PII CATEGORIES & SEVERITY DONUT
     c_g1, c_g2 = st.columns(2)
 
     with c_g1:
