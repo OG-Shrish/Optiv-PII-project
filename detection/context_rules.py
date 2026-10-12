@@ -63,13 +63,21 @@ CONTEXT_RULES = [
         Severity.MEDIUM,
         "Preceded by explicit Date of Birth keyword label.",
     ),
-    # Contact / Person Name Cues (e.g. 'Contact: John Smith', 'Assigned To: Alice Wong')
+    # Contact / Passenger / Person Name Cues (e.g. 'Passenger: Shrish', 'Contact: John Smith', 'Assigned To: Alice Wong')
     (
-        re.compile(r"(?i)\b(?:Contact|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator)\s*[:=-][ \t]*([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3})"),
+        re.compile(r"(?i)\b(?:Passenger(?:\s+Name)?|Name|Full\s+Name|First\s+Name|Traveler(?:\s+Name)?|Traveller(?:\s+Name)?|Customer(?:\s+Name)?|Guest(?:\s+Name)?|Contact(?:\s+Person)?|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator|Doctor|Patient|Attendee)\s*[:=-][ \t]*([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){0,3})"),
         PIIType.PERSON,
         0.95,
         Severity.HIGH,
-        "Person name preceded by organizational role or contact label.",
+        "Person name preceded by organizational role, ticket header, or passenger label.",
+    ),
+    # Honorific / Salutation Person Name Cues (e.g. 'Mr. Shrish', 'Dr. Watson', 'Shri Shrish')
+    (
+        re.compile(r"\b(?:Mr\.?|Mrs\.?|Ms\.?|Miss|Dr\.?|Prof\.?|Shri|Smt\.?)[ \t]+([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){0,3})\b"),
+        PIIType.PERSON,
+        0.96,
+        Severity.HIGH,
+        "Person name preceded by honorific title or personal salutation.",
     ),
     # Email with Label
     (

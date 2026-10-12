@@ -77,6 +77,37 @@ NON_PERSON_WORDS = {
     "executive", "briefing"
 }
 
+# Known nationalities, demonyms, religions, and political affiliations (true NORP entities)
+# spaCy's statistical model often misclassifies non-Western names ending in '-ish' (e.g. Shrish, Ashish, Girish, Satish)
+# as NORP instead of PERSON. We use this dictionary to disambiguate true NORP words from genuine personal names.
+KNOWN_NORP_WORDS = {
+    # Genuine nationalities, demonyms & cultural groups
+    "american", "americans", "british", "english", "canadian", "canadians", "australian", "australians",
+    "indian", "indians", "chinese", "japanese", "russian", "russians", "french", "german", "germans",
+    "italian", "italians", "spanish", "mexican", "mexicans", "brazilian", "brazilians", "korean", "koreans",
+    "irish", "scottish", "welsh", "dutch", "swiss", "swedish", "norwegian", "danish", "finnish", "polish",
+    "turkish", "greek", "greeks", "egyptian", "egyptians", "nigerian", "nigerians", "kenyan", "kenyans",
+    "south african", "african", "africans", "asian", "asians", "european", "europeans", "hispanic", "hispanics",
+    "latino", "latinos", "arab", "arabs", "israeli", "israelis", "palestinian", "palestinians",
+    "pakistani", "pakistanis", "bangladeshi", "bangladeshis", "sri lankan", "nepali", "nepalese",
+    "tibetan", "persian", "persians", "iranian", "iranians", "iraqi", "iraqis", "afghan", "afghans",
+    "syrian", "syrians", "lebanese", "jordanian", "saudi", "saudis", "emirati", "emiratis", "qatari",
+    "kuwaiti", "omani", "yemeni", "filipino", "filipinos", "vietnamese", "thai", "indonesian", "indonesians",
+    "malaysian", "malaysians", "singaporean", "singaporeans", "taiwanese", "ukrainian", "ukrainians",
+    "belarusian", "czech", "czechs", "slovak", "slovaks", "hungarian", "hungarians", "romanian", "romanians",
+    "bulgarian", "bulgarians", "serbian", "serbians", "croatian", "croatians", "bosnian", "bosnians",
+    "slovenian", "slovenians", "albanian", "albanians", "macedonian", "macedonians", "austrian", "austrians",
+    "belgian", "belgians", "portuguese", "argentinian", "argentinians", "argentine", "colombian", "colombians",
+    "peruvian", "peruvians", "chilean", "chileans", "venezuelan", "venezuelans", "amish", "kurdish", "flemish",
+    # Religions and religious adherents
+    "christian", "christians", "christianity", "muslim", "muslims", "islamic", "hindu", "hindus", "hinduism",
+    "jewish", "jews", "judaism", "buddhist", "buddhists", "buddhism", "sikh", "sikhs", "sikhism",
+    "catholic", "catholics", "catholicism", "protestant", "protestants", "orthodox",
+    # Political affiliations
+    "democrat", "democrats", "democratic", "republican", "republicans", "conservative", "conservatives",
+    "labour", "socialist", "socialists", "communist", "communists", "liberal", "liberals", "marxist"
+}
+
 
 def is_valid_person_entity(ent_text: str) -> bool:
     """Validate that an NER candidate entity represents a genuine person name."""
@@ -151,8 +182,10 @@ class NERDetector:
             if not ent_text or PLACEHOLDER_REGEX.match(ent_text):
                 continue
 
-            # PERSON classification
-            if ent.label_ == "PERSON":
+            # PERSON classification (including Indian/non-Western names misclassified as NORP)
+            is_person_label = ent.label_ == "PERSON"
+            is_misclassified_norp = ent.label_ == "NORP" and ent_text.lower() not in KNOWN_NORP_WORDS
+            if is_person_label or is_misclassified_norp:
                 if not is_valid_person_entity(ent_text):
                     continue
 

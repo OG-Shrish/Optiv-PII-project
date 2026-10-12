@@ -466,7 +466,7 @@ st.markdown(CORPORATE_LIGHT_CSS, unsafe_allow_html=True)
 
 @st.cache_resource
 def get_pipeline():
-    """Cache singleton pipeline instance for high performance (v2 - refined travel NER validation)."""
+    """Cache singleton pipeline instance for high performance (v3 - Indian name & single-token detection)."""
     return GatewayPipeline()
 
 

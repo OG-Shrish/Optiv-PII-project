@@ -187,3 +187,15 @@ def test_regex_false_positives_eliminated():
     assert any("9876543210" in t for t in finding_texts)
 
 
+def test_indian_names_and_single_names_detected():
+    """Ensure Indian names like Shrish and single names in ticket headers are accurately detected."""
+    engine = PIIEngine()
+    text = "Boarding pass for Passenger: Shrish. Also traveling with Ashish."
+    findings = engine.detect_raw_text(text)
+
+    names = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+    assert "Shrish" in names
+    assert "Ashish" in names
+
+
+
