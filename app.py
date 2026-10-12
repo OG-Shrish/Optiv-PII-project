@@ -80,8 +80,8 @@ CORPORATE_LIGHT_CSS = """
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        padding: 24px 28px;
-        margin-bottom: 24px;
+        padding: 18px 24px;
+        margin-bottom: 20px;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     }
     .header-title-row {
@@ -90,7 +90,7 @@ CORPORATE_LIGHT_CSS = """
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 12px;
-        margin-bottom: 6px;
+        margin-bottom: 0;
     }
     .header-title {
         font-size: 24px;
@@ -392,13 +392,6 @@ st.markdown(
         <div class="header-title-row">
             <h1 class="header-title">🛡️ OPTIV PII Security Gateway</h1>
             <span class="header-security-badge">● Local Processing — Zero External AI Call</span>
-        </div>
-        <div class="header-subtitle">
-            Enterprise Pre-LLM Security Gateway & Document Sanitization Pipeline • Detect • Classify • Redact • Validate
-        </div>
-        <div class="header-principle">
-            <span>Core Security Mandate:</span>
-            <b>"NO PII → SAFE FOR DOWNSTREAM AI"</b>
         </div>
     </div>
     """,
@@ -804,21 +797,3 @@ if results:
             mime="text/csv",
             use_container_width=True,
         )
-
-else:
-    # Initial Clean Landing State Box
-    st.markdown(
-        """
-        <div class="empty-state-box">
-            <div class="empty-state-icon">🛡️</div>
-            <div class="empty-state-heading">Pre-LLM Security Inspection Ready</div>
-            <div class="empty-state-text">
-                Upload business evidence documents (PDF, DOCX, PPTX, TXT) or click <b>Load Sample Evidence</b> above to test the hybrid PII detection, consistent semantic redaction, and fail-closed validation pipeline.
-            </div>
-            <div class="empty-state-footer">
-                Local computation • Zero telemetry • No external LLM calls • Fail-closed architecture
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
