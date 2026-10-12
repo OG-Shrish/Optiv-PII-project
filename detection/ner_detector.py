@@ -36,6 +36,14 @@ NON_PERSON_WORDS = {
     "departures", "route", "sector", "economy", "business", "premium", "meal", "meals",
     "beverage", "beverages", "snack", "snacks", "service", "services", "amenity", "amenities",
     "infant", "child", "adult", "passenger", "traveler", "traveller", "guest", "pass",
+    "hand", "checked", "excess", "allowance", "dimension", "dimensions", "weight",
+    "counter", "kiosk", "zone", "bay", "carousel", "hall", "lounge",
+    # Airline brands and carriers
+    "akasa", "air", "indigo", "spicejet", "vistara", "airindia", "emirates", "qatar", "lufthansa",
+    # ID document types and regulatory keywords
+    "identification", "identity", "photo", "proof", "valid", "validity", "mandatory", "required",
+    "requirement", "requirements", "instruction", "instructions", "guideline", "guidelines",
+    "aadhaar", "pan", "voter", "driving", "license", "licence",
     # Financial and commerce words
     "price", "prices", "cost", "costs", "amount", "fee", "fees", "charge", "charges",
     "tax", "taxes", "gst", "vat", "cgst", "sgst", "igst", "discount", "coupon", "voucher",
