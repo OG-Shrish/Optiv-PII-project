@@ -8,10 +8,34 @@ from typing import List
 
 from models.schemas import PIIFinding, PIIType, Severity, ConfidenceLevel
 from utils.helpers import mask_sensitive_value
+from detection.ner_detector import is_valid_person_entity
 
 PLACEHOLDER_REGEX = re.compile(
     r"^\[(PERSON|EMAIL|PHONE|EMPLOYEE_ID|GOVERNMENT_ID|ADDRESS|DATE_OF_BIRTH|CREDIT_CARD|IP_ADDRESS|OTHER_PII)_\d+\]$"
 )
+
+NON_ID_WORDS = {
+    "none", "null", "nil", "na", "n/a", "nan", "unknown", "required", "mandatory",
+    "optional", "pending", "applicable", "available", "unavailable", "valid",
+    "invalid", "verified", "true", "false", "yes", "no", "standard", "basic",
+    "original", "copy", "attached", "provided", "check", "see", "below", "above",
+    "indian", "national", "domestic", "international", "issued", "holder"
+}
+
+
+def is_valid_id_token(val: str) -> bool:
+    """Validate that an ID candidate token represents a real identifier and not an English status word."""
+    cleaned = val.strip().strip(":=-,. ")
+    if len(cleaned) < 3 or len(cleaned) > 25:
+        return False
+    if cleaned.lower() in NON_ID_WORDS:
+        return False
+    # Genuine identifiers (Employee ID, Govt ID, Passport) must have at least one digit
+    # or contain a hyphen/underscore with alphanumeric characters
+    if not re.search(r"\d", cleaned) and not re.search(r"[-_]", cleaned):
+        return False
+    return True
+
 
 # Rule definitions: (Regex Pattern, PII Type, Confidence, Severity, Explanation)
 CONTEXT_RULES = [
@@ -25,7 +49,7 @@ CONTEXT_RULES = [
     ),
     # Government ID Cues
     (
-        re.compile(r"(?i)\b(?:Government\s+ID|Govt\s+ID|National\s+ID|Passport(?:\s+No\.?)?|Tax\s+ID)\s*[:=-]?\s*([A-Za-z0-9_-]{4,20})"),
+        re.compile(r"(?i)\b(?:Government\s+ID|Govt\s+ID|National\s+ID|Passport\s*(?:No\.?|Number|#|ID)|Passport\s*[:=-]|Tax\s+ID)\s*[:=-]?\s*([A-Za-z0-9_-]{4,20})"),
         PIIType.GOVERNMENT_ID,
         0.98,
         Severity.CRITICAL,
@@ -41,7 +65,7 @@ CONTEXT_RULES = [
     ),
     # Contact / Person Name Cues (e.g. 'Contact: John Smith', 'Assigned To: Alice Wong')
     (
-        re.compile(r"(?i)\b(?:Contact|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator)\s*[:=-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})"),
+        re.compile(r"(?i)\b(?:Contact|Assigned\s+To|Account\s+Owner|Manager|Employee|Owner|Investigator)\s*[:=-][ \t]*([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3})"),
         PIIType.PERSON,
         0.95,
         Severity.HIGH,
@@ -49,7 +73,7 @@ CONTEXT_RULES = [
     ),
     # Email with Label
     (
-        re.compile(r"(?i)\b(?:Email(?:\s+Address)?)\s*[:=-]?\s*([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"),
+        re.compile(r"(?i)\b(?:Email(?:\s+Address)?)\s*[:=-]?\s*([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})"),
         PIIType.EMAIL,
         0.99,
         Severity.HIGH,
@@ -103,6 +127,23 @@ class ContextDetector:
 
                 if not val or PLACEHOLDER_REGEX.match(val):
                     continue
+
+                # Validation per PII type to prevent false positive pattern matches
+                if pii_type in (PIIType.EMPLOYEE_ID, PIIType.GOVERNMENT_ID):
+                    if not is_valid_id_token(val):
+                        continue
+                elif pii_type == PIIType.PERSON:
+                    if not is_valid_person_entity(val):
+                        continue
+                elif pii_type == PIIType.PHONE:
+                    digits = re.sub(r"\D", "", val)
+                    if len(digits) < 7 or len(digits) > 15:
+                        continue
+                    if len(set(digits)) <= 2 or re.search(r"0{5,}", digits):
+                        continue
+                elif pii_type == PIIType.EMAIL:
+                    if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$", val):
+                        continue
 
                 conf_level = (
                     ConfidenceLevel.HIGH if confidence >= 0.90

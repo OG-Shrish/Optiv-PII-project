@@ -7,9 +7,9 @@ from utils.helpers import validate_luhn, is_valid_ipv4, mask_sensitive_value
 
 
 # Precompiled regex patterns for performance
-# Note: Using negative lookbehinds/lookaheads to prevent matching already redacted placeholders [TYPE_XXX]
+# Boundary-enforced email regex ending with valid 2+ character TLD
 EMAIL_REGEX = re.compile(
-    r"(?<!\[)(?<![A-Za-z0-9_.-])([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)(?![A-Za-z0-9_.-])(?!\])"
+    r"\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}\b"
 )
 
 # Phone patterns:
@@ -41,7 +41,7 @@ EMPLOYEE_ID_REGEX = re.compile(
 # Government IDs (SSN, GVT-*, Aadhaar, etc.)
 SSN_REGEX = re.compile(r"(?<!\w)\b\d{3}-\d{2}-\d{4}\b(?!\w)")
 GOVT_GENERIC_REGEX = re.compile(r"(?<!\w)\b(?:GVT|GOV|ID|PASSPORT)[-_][0-9A-Z]{5,10}\b(?!\w)", re.IGNORECASE)
-AADHAAR_REGEX = re.compile(r"(?<!\w)\b[2-9]\d{3}\s\d{4}\s\d{4}\b(?!\w)")
+AADHAAR_REGEX = re.compile(r"(?<!\w)\b[2-9]\d{3}\s\d{4}\s\d{4}\b(?!\s\d{4})(?!\w)")
 
 
 class RegexDetector:
@@ -88,14 +88,14 @@ class RegexDetector:
                 )
             )
 
-        # 2. Credit Cards
+        # 2. Credit Cards - Strictly require Luhn checksum validity
         for match in CREDIT_CARD_REGEX.finditer(text):
             val = match.group(0)
             if placeholder_pattern.match(val):
                 continue
             digits = re.sub(r"\D", "", val)
-            is_luhn = validate_luhn(digits)
-            confidence = 0.98 if is_luhn else 0.85
+            if not validate_luhn(digits):
+                continue
             findings.append(
                 PIIFinding(
                     finding_id=f"rgx_cc_{block_order}_{match.start()}",
@@ -107,11 +107,11 @@ class RegexDetector:
                     end=match.end(),
                     text=val,
                     pii_type=PIIType.CREDIT_CARD,
-                    confidence=confidence,
-                    confidence_level=ConfidenceLevel.HIGH if is_luhn else ConfidenceLevel.MEDIUM,
+                    confidence=0.98,
+                    confidence_level=ConfidenceLevel.HIGH,
                     detection_method=["REGEX"],
                     severity=Severity.CRITICAL,
-                    explanation=f"Payment card number format{' (Luhn checksum verified)' if is_luhn else ''}.",
+                    explanation="Payment card number format (Luhn checksum verified).",
                     masked_text=mask_sensitive_value(val, "CREDIT_CARD"),
                 )
             )
@@ -223,6 +223,8 @@ class RegexDetector:
             val = match.group(0)
             if placeholder_pattern.match(val):
                 continue
+            if any(f.start <= match.start() and f.end >= match.end() for f in findings if f.pii_type == PIIType.CREDIT_CARD):
+                continue
             findings.append(
                 PIIFinding(
                     finding_id=f"rgx_aadhaar_{block_order}_{match.start()}",
@@ -254,6 +256,13 @@ class RegexDetector:
                 # Sanity filter: phone must have at least 7 digits and not look like an IP or date
                 digits = re.sub(r"\D", "", val)
                 if len(digits) < 7 or len(digits) > 15:
+                    continue
+                # Disallow dummy/all-same digits (e.g. 9999999999) or financial numbers with 5+ consecutive zeroes (e.g. 8000000000)
+                if len(set(digits)) <= 2 or re.search(r"0{5,}", digits):
+                    continue
+                # Check if immediately preceded by currency symbol/keyword in text
+                preceding_slice = text[max(0, match.start() - 6):match.start()].lower()
+                if re.search(r"[\$€£¥₹]|(?:inr|usd|eur|gbp|rs\.?)\s*$", preceding_slice):
                     continue
                 # Skip if already detected as IP or Credit Card
                 if any(f.start <= match.start() and f.end >= match.end() for f in findings if f.pii_type in [PIIType.IP_ADDRESS, PIIType.CREDIT_CARD]):

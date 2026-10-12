@@ -135,3 +135,55 @@ def test_travel_document_non_person_not_flagged():
     assert "7 Kg" not in person_names
     assert "Other Add" not in person_names
 
+
+def test_context_false_positives_eliminated():
+    """Ensure context keyword labels followed by English status words are not falsely flagged as PII."""
+    context_detector = ContextDetector()
+    text = (
+        "Document guidelines:\n"
+        "Passport: Required\n"
+        "Employee: Full Time\n"
+        "Contact: Customer Support\n"
+        "Lead Investigator: John Smith\n"
+        "Employee ID: EMP-10293\n"
+        "Passport No: A1234567\n"
+    )
+    findings = context_detector.detect(text, "d1", "guide.txt", "p1", 0)
+
+    finding_map = {f.text: f.pii_type for f in findings}
+    assert "Required" not in finding_map
+    assert "Full Time" not in finding_map
+    assert "Customer Support" not in finding_map
+    assert "John Smith" in finding_map
+    assert finding_map["John Smith"] == PIIType.PERSON
+    assert "EMP-10293" in finding_map
+    assert finding_map["EMP-10293"] == PIIType.EMPLOYEE_ID
+    assert "A1234567" in finding_map
+    assert finding_map["A1234567"] == PIIType.GOVERNMENT_ID
+
+
+def test_regex_false_positives_eliminated():
+    """Ensure non-Luhn card numbers, financial totals, and sentence-ending email periods are handled cleanly."""
+    rgx = RegexDetector()
+    text = (
+        "Tracking block: 1234-5678-9012-3456.\n"
+        "Please email support@example.com.\n"
+        "Total revenue: $8000000000 and cost INR 9876543210.\n"
+        "Valid payment card: 4111 1111 1111 1111.\n"
+        "Call us at +91 9876543210.\n"
+    )
+    findings = rgx.detect(text, "d1", "test.txt", "p1", 0)
+
+    finding_texts = [f.text for f in findings]
+    # Non-Luhn card must not be flagged
+    assert "1234-5678-9012-3456" not in finding_texts
+    # Email must not capture the sentence period
+    assert "support@example.com" in finding_texts
+    assert "support@example.com." not in finding_texts
+    # Financial sums must not be flagged as phone numbers
+    assert "8000000000" not in finding_texts
+    # Valid credit card and genuine phone must be detected
+    assert any("4111" in t for t in finding_texts)
+    assert any("9876543210" in t for t in finding_texts)
+
+

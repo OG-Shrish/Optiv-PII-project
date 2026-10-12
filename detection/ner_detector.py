@@ -53,6 +53,18 @@ NON_PERSON_WORDS = {
     "kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "g", "gm", "gms", "gram", "grams",
     "lb", "lbs", "pound", "pounds", "oz", "ounce", "ounces", "l", "ltr", "liter", "liters",
     "ml", "km", "m", "cm", "mm", "in", "ft",
+    # Corporate departments, teams, operations & roles
+    "customer", "support", "technical", "sales", "marketing", "finance", "accounting", "legal",
+    "compliance", "audit", "operations", "administration", "human", "resources", "department",
+    "dept", "division", "branch", "group", "team", "desk", "helpdesk", "reception", "center",
+    "centre", "office", "hq", "headquarters", "agency", "unit", "management", "staff", "crew",
+    "officer", "agent", "rep", "representative", "specialist", "coordinator", "supervisor",
+    "full", "part", "shift", "associate", "analyst", "lead", "leader", "member",
+    # Status, state, booleans & null markers
+    "active", "inactive", "pending", "confirmed", "approved", "rejected", "declined", "completed",
+    "submitted", "final", "open", "closed", "available", "unavailable", "mandatory", "optional",
+    "applicable", "routine", "urgent", "true", "false", "yes", "no", "none", "null", "nil",
+    "na", "nan", "unknown", "empty", "blank", "missing",
     # Temporal & calendar terms
     "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
     "january", "february", "march", "april", "may", "june", "july", "august",
