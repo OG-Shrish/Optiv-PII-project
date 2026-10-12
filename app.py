@@ -678,14 +678,6 @@ elif st.session_state.get("active_view") == "visuals":
             conf_str = f.confidence_level.value if hasattr(f.confidence_level, "value") else str(f.confidence_level)
             confidence_counter[conf_str] = confidence_counter.get(conf_str, 0) + 1
 
-        funnel_steps = ["Blocks Ingested", "PII Flagged", "Entities Redacted", "Validated Safe Blocks"]
-        passed_count = len(active_doc.blocks) if (active_doc.validation_result and active_doc.validation_result.passed) else 0
-        funnel_values = [
-            len(active_doc.blocks),
-            total_findings,
-            total_findings,
-            passed_count,
-        ]
 
     else:
         st.markdown(
@@ -727,8 +719,7 @@ elif st.session_state.get("active_view") == "visuals":
             "MEDIUM": 12,
             "LOW": 3,
         }
-        funnel_steps = ["Blocks Ingested", "PII Flagged", "Entities Redacted", "Validated Safe Blocks"]
-        funnel_values = [120, 49, 49, 120]
+
 
     # 1. SUMMARY METRIC CARDS
     c_m1, c_m2, c_m3, c_m4 = st.columns(4)
@@ -880,35 +871,10 @@ elif st.session_state.get("active_view") == "visuals":
             st.success("Zero risk detected. Document is completely clean.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 4. ROW 2: SECURITY GATE FUNNEL & DETECTION METHODOLOGY
+    # 3. ROW 2: MULTI-ENGINE ATTRIBUTION & CONFIDENCE DISTRIBUTION
     c_g3, c_g4 = st.columns(2)
 
     with c_g3:
-        st.markdown(
-            """
-            <div class="chart-container-card">
-                <div class="chart-container-title">🔻 Security Pipeline Funnel</div>
-                <div class="chart-container-subtitle">Progression of document blocks through sanitization and validation.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        fig_funnel = go.Figure(
-            go.Funnel(
-                y=funnel_steps,
-                x=funnel_values,
-                textinfo="value+percent initial",
-                marker=dict(
-                    color=["#2563eb", "#3b82f6", "#60a5fa", "#10b981"],
-                    line=dict(width=1, color="#ffffff"),
-                ),
-            )
-        )
-        fig_funnel = apply_corporate_theme(fig_funnel, height=310)
-        fig_funnel.update_layout(yaxis_title=None)
-        st.plotly_chart(fig_funnel, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with c_g4:
         st.markdown(
             """
             <div class="chart-container-card">
@@ -945,10 +911,7 @@ elif st.session_state.get("active_view") == "visuals":
             st.info("No detection engines triggered.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # 5. ROW 3: CONFIDENCE DISTRIBUTION & RISK MATRIX
-    c_g5, c_g6 = st.columns(2)
-
-    with c_g5:
+    with c_g4:
         st.markdown(
             """
             <div class="chart-container-card">
@@ -974,7 +937,7 @@ elif st.session_state.get("active_view") == "visuals":
                 textposition="outside",
             )
         )
-        fig_conf = apply_corporate_theme(fig_conf, height=290)
+        fig_conf = apply_corporate_theme(fig_conf, height=310)
         fig_conf.update_layout(
             xaxis_title=None,
             yaxis_title="Findings Count",
@@ -982,43 +945,43 @@ elif st.session_state.get("active_view") == "visuals":
         st.plotly_chart(fig_conf, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with c_g6:
-        st.markdown(
-            """
-            <div class="chart-container-card">
-                <div class="chart-container-title">📋 Category & Severity Telemetry Table</div>
-                <div class="chart-container-subtitle">Consolidated count of detected items by category and risk level.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if type_data:
-            summary_rows = []
-            category_labels_map = {
-                "PERSON": "Person Name",
-                "EMAIL": "Email Address",
-                "PHONE": "Phone Number",
-                "EMPLOYEE_ID": "Employee ID",
-                "GOVERNMENT_ID": "Government ID / SSN",
-                "ADDRESS": "Physical Address",
-                "DATE_OF_BIRTH": "Date of Birth",
-                "CREDIT_CARD": "Credit Card Number",
-                "IP_ADDRESS": "IP Address",
-                "OTHER_PII": "Other PII",
-            }
-            for k, cnt in type_data.items():
-                cat_friendly = category_labels_map.get(k, k.replace("_", " ").title())
-                risk = "High" if k in ("CREDIT_CARD", "GOVERNMENT_ID", "EMPLOYEE_ID") else ("Medium" if k in ("PERSON", "EMAIL", "PHONE") else "Low")
-                summary_rows.append({
-                    "PII Classification": cat_friendly,
-                    "Count": cnt,
-                    "Risk Level": risk,
-                    "Action Policy": "Consistent Semantic Redaction",
-                })
-            df_summary_matrix = pd.DataFrame(summary_rows).sort_values(by="Count", ascending=False)
-            st.dataframe(df_summary_matrix, use_container_width=True, hide_index=True)
-        else:
-            st.info("Zero PII detected.")
-        st.markdown("</div>", unsafe_allow_html=True)
+    # 4. ROW 3: CATEGORY & SEVERITY TELEMETRY TABLE
+    st.markdown(
+        """
+        <div class="chart-container-card">
+            <div class="chart-container-title">📋 Category & Severity Telemetry Table</div>
+            <div class="chart-container-subtitle">Consolidated count of detected items by category and risk level.</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if type_data:
+        summary_rows = []
+        category_labels_map = {
+            "PERSON": "Person Name",
+            "EMAIL": "Email Address",
+            "PHONE": "Phone Number",
+            "EMPLOYEE_ID": "Employee ID",
+            "GOVERNMENT_ID": "Government ID / SSN",
+            "ADDRESS": "Physical Address",
+            "DATE_OF_BIRTH": "Date of Birth",
+            "CREDIT_CARD": "Credit Card Number",
+            "IP_ADDRESS": "IP Address",
+            "OTHER_PII": "Other PII",
+        }
+        for k, cnt in type_data.items():
+            cat_friendly = category_labels_map.get(k, k.replace("_", " ").title())
+            risk = "High" if k in ("CREDIT_CARD", "GOVERNMENT_ID", "EMPLOYEE_ID") else ("Medium" if k in ("PERSON", "EMAIL", "PHONE") else "Low")
+            summary_rows.append({
+                "PII Classification": cat_friendly,
+                "Count": cnt,
+                "Risk Level": risk,
+                "Action Policy": "Consistent Semantic Redaction",
+            })
+        df_summary_matrix = pd.DataFrame(summary_rows).sort_values(by="Count", ascending=False)
+        st.dataframe(df_summary_matrix, use_container_width=True, hide_index=True)
+    else:
+        st.info("Zero PII detected.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     if st.button("← Back to Main Dashboard", type="primary", key="back_from_visuals_bottom"):
