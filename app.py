@@ -1315,7 +1315,6 @@ else:
                     "PII Type": f.pii_type.value if hasattr(f.pii_type, "value") else str(f.pii_type),
                     "Confidence": f"{f.confidence * 100:.1f}%",
                     "Method": " + ".join(f.detection_method),
-                    "Document": f.file_name,
                     "Location": f.location,
                     "Entity (Masked/Reviewed)": display_val,
                 })
