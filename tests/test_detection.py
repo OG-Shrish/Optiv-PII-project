@@ -317,3 +317,83 @@ def test_names_with_common_word_surnames_preserved():
     assert any("Vincent Price" in n for n in person_names)
     assert any("Brian May" in n for n in person_names)
 
+
+def test_question_paper_and_academic_terms_not_flagged_as_person():
+    """Ensure question paper headers, exam terminology, and syllabus phrases are not classified as PERSON."""
+    engine = PIIEngine()
+    exam_text = (
+        "MIDTERM EXAMINATION - QUESTION PAPER\n\n"
+        "Course Code: CS-301 • Distributed Systems\n"
+        "Instructions: Attempt all compulsory questions in Section A.\n"
+        "Part I: Multiple Choice Questions (20 Marks)\n"
+        "Question 1: Explain the consensus problem in asynchronous networks.\n"
+        "Problem 2: Derive the message complexity.\n"
+        "Module IV: Practice Problems and Assignment Solutions.\n"
+        "Exercise 5: Differentiate between safety and liveness.\n"
+    )
+    findings = engine.detect_raw_text(exam_text)
+    person_names = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+    assert len(person_names) == 0, f"Academic terms falsely flagged as PERSON: {person_names}"
+
+
+def test_address_detection_multiple_structures():
+    """Ensure address detection captures street, apartment, and plot structures."""
+    ctx = ContextDetector()
+    text1 = "Permanent Address: 124 Elm Street, Springfield, IL 62701"
+    findings1 = ctx.detect(text1, "d1", "test.txt", "p1", 0)
+    addr1 = [f for f in findings1 if f.pii_type == PIIType.ADDRESS]
+    assert len(addr1) >= 1
+    assert "Elm Street" in addr1[0].text
+
+    text2 = "Residential Address: Flat 402, Green Valley Apartments, MG Road, Pune"
+    findings2 = ctx.detect(text2, "d2", "test.txt", "p2", 0)
+    addr2 = [f for f in findings2 if f.pii_type == PIIType.ADDRESS]
+    assert len(addr2) >= 1
+    assert "Flat 402" in addr2[0].text
+
+
+def test_intelligent_risk_classification():
+    """Verify calibrated, explainable document risk tiers."""
+    from detection.risk_classifier import RiskClassifier
+
+    # 1. Clean document -> LOW risk
+    clean_assessment = RiskClassifier.assess_document([])
+    assert clean_assessment["risk_tier"] == "LOW"
+    assert clean_assessment["risk_score"] == 0
+
+    # 2. Single isolated person -> LOW/MODERATE risk
+    engine = PIIEngine()
+    single_person_doc = "Candidate Name: Vikas Ahankari"
+    f_single = engine.detect_raw_text(single_person_doc)
+    assess_single = RiskClassifier.assess_document(f_single)
+    assert assess_single["risk_tier"] in ("LOW", "MODERATE")
+    assert assess_single["distinct_entities_count"] == 1
+    assert assess_single["risk_score"] <= 35
+
+    # 3. Repeated mentions of same person -> Deduplicated, does not artificially inflate
+    repeated_doc = "Vikas Ahankari attended the meeting. Vikas Ahankari spoke. Vikas Ahankari approved."
+    f_repeated = engine.detect_raw_text(repeated_doc)
+    assess_repeated = RiskClassifier.assess_document(f_repeated)
+    assert assess_repeated["distinct_entities_count"] == 1
+    assert assess_repeated["risk_tier"] in ("LOW", "MODERATE")
+
+    # 4. Multi-attribute correlated profile -> HIGH risk
+    profile_doc = (
+        "Name: Vikas Ahankari\n"
+        "Email: vikas.ahankari@company.com\n"
+        "Phone: +91 9876543210\n"
+        "Employee ID: EMP-10293\n"
+    )
+    f_profile = engine.detect_raw_text(profile_doc)
+    assess_profile = RiskClassifier.assess_document(f_profile)
+    assert assess_profile["risk_tier"] in ("HIGH", "CRITICAL")
+    assert assess_profile["distinct_entities_count"] >= 3
+
+    # 5. Critical regulated credentials -> CRITICAL risk
+    credit_doc = "Payment card: 4111 1111 1111 1111, SSN: 123-45-6789"
+    f_credit = engine.detect_raw_text(credit_doc)
+    assess_credit = RiskClassifier.assess_document(f_credit)
+    assert assess_credit["risk_tier"] == "CRITICAL"
+    assert assess_credit["critical_identifiers_present"] is True
+
+

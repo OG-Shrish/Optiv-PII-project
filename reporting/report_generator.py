@@ -35,14 +35,20 @@ class ReportGenerator:
         sanitized_count = sum(1 for r in results if r.security_status == SecurityStatus.SANITIZED)
         blocked_count = sum(1 for r in results if r.security_status in (SecurityStatus.BLOCKED, SecurityStatus.PROCESSING_ERROR))
         review_count = sum(1 for r in results if r.security_status == SecurityStatus.REVIEW_REQUIRED)
+        low_risk_count = sum(
+            1 for r in results
+            if (r.risk_assessment and r.risk_assessment.get("risk_tier") == "LOW") or len(r.pii_findings) == 0
+        )
 
         return {
             "total_documents": total_docs,
             "total_pii_detected": total_pii,
             "high_risk_findings": high_risk_count,
+            "low_risk_documents": low_risk_count,
             "files_sanitized": sanitized_count,
             "files_blocked": blocked_count,
             "files_review_required": review_count,
+            "review_or_blocked": blocked_count + review_count,
             "type_breakdown": dict(type_counter),
             "severity_breakdown": dict(severity_counter),
         }

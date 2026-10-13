@@ -169,6 +169,7 @@ class DocumentAnalysisResult:
     requires_ocr: bool = False
     error_message: Optional[str] = None
     processing_time_ms: float = 0.0
+    risk_assessment: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -187,4 +188,5 @@ class DocumentAnalysisResult:
             "requires_ocr": self.requires_ocr,
             "error_message": self.error_message,
             "processing_time_ms": round(self.processing_time_ms, 2),
+            "risk_assessment": self.risk_assessment,
         }

@@ -124,7 +124,17 @@ STRICT_NON_PERSON_WORDS = {
     "skills", "skill", "projects", "project", "work", "job", "career", "careers",
     # Corporate hierarchy & executive title acronyms
     "dgm", "gm", "agm", "vp", "avp", "svp", "evp", "ceo", "cto", "cfo", "coo", "cio", "ciso",
-    "cmo", "cro", "hr", "mgr"
+    "cmo", "cro", "hr", "mgr",
+    # Examination, question paper, academic & coursework vocabulary
+    "question", "questions", "answer", "answers", "problem", "problems", "solution", "solutions",
+    "exercise", "exercises", "assignment", "assignments", "homework", "exam", "exams", "examination",
+    "quiz", "quizzes", "test", "tests", "paper", "papers", "marks", "points", "score", "scores",
+    "part", "parts", "module", "modules", "unit", "units", "chapter", "chapters", "topic", "topics",
+    "lesson", "lessons", "syllabus", "curriculum", "semester", "semesters", "course", "courses",
+    "midterm", "final", "finals", "compulsory", "attempt", "derive", "evaluate", "calculate",
+    "determine", "compute", "prove", "explain", "describe", "discuss", "define", "illustrate",
+    "verify", "compare", "distinguish", "differentiate", "agenda", "bullet", "bullets",
+    "figure", "figures", "diagram", "diagrams", "illustration", "illustrations"
 }
 
 # Common English words/labels that are non-person when appearing alone as a single word or label,
@@ -145,7 +155,8 @@ TECHNICAL_HEAD_NOUNS = {
     "circuits", "signals", "packets", "protocols", "parameters", "structures",
     "operations", "systems", "tables", "queues", "stacks", "arrays", "sets",
     "subsets", "clusters", "distributions", "heuristics", "iterations", "processes",
-    "threads", "caches", "buffers", "properties"
+    "threads", "caches", "buffers", "properties", "papers", "questions", "answers",
+    "problems", "solutions", "exercises", "assignments", "modules", "units", "chapters"
 }
 
 # Corporate & organizational suffixes to distinguish organizations from person names
@@ -251,8 +262,12 @@ def is_valid_person_entity(ent_text: str) -> bool:
                 if not (w.istitle() or (len(w) == 1 and w.isupper())):
                     return False
 
-    # Check if phrase ends with a technical head noun (e.g. 'Antiparallel Edges', 'Augmenting Paths')
+    # Check if phrase ends with a technical head noun (e.g. 'Antiparallel Edges', 'Augmenting Paths', 'Question Paper')
     if words[-1].lower() in TECHNICAL_HEAD_NOUNS:
+        return False
+
+    # Roman numerals in 2-word phrase (e.g. 'Part I', 'Section II', 'Unit IV') indicate outline structure
+    if len(words) <= 2 and re.match(r"^(?:I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$", words[-1], re.IGNORECASE):
         return False
 
     # Reject if combined string is in strict dictionary

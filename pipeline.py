@@ -18,6 +18,7 @@ from models.schemas import (
 )
 from extractors import extract_document
 from detection.pii_engine import PIIEngine
+from detection.risk_classifier import RiskClassifier
 from redaction.redactor import PIIRedactor
 from redaction.validator import PostRedactionValidator
 from utils.helpers import calculate_file_hash
@@ -127,7 +128,14 @@ class GatewayPipeline:
                 processing_time_ms=(time.time() - start_time) * 1000,
             )
 
-        # 3. Redaction using Consistent Semantic Placeholders
+        # 3. Intelligent Risk Assessment
+        risk_assessment = RiskClassifier.assess_document(
+            findings=findings,
+            total_characters=total_chars,
+            blocks_count=len(blocks),
+        )
+
+        # 4. Redaction using Consistent Semantic Placeholders
         try:
             redaction_res = self.redactor.redact_document(
                 blocks=blocks,
@@ -199,4 +207,5 @@ class GatewayPipeline:
             security_status=final_status,
             requires_ocr=requires_ocr,
             processing_time_ms=elapsed_ms,
+            risk_assessment=risk_assessment,
         )

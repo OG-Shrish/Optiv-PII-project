@@ -49,7 +49,7 @@ CONTEXT_RULES = [
     ),
     # Government ID Cues
     (
-        re.compile(r"(?i)\b(?:Government\s+ID|Govt\s+ID|National\s+ID|Passport\s*(?:No\.?|Number|#|ID)|Passport\s*[:=-]|Tax\s+ID)\s*[:=-]?\s*([A-Za-z0-9_-]{4,20})"),
+        re.compile(r"(?i)\b(?:Government\s+ID|Govt\s+ID|National\s+ID|Passport\s*(?:No\.?|Number|#|ID)|Passport\s*[:=-]|Tax\s+ID|PAN(?:\s+Card)?(?:\s+No\.?|Number|#)?|Aadhaar(?:\s+Card)?(?:\s+No\.?|Number|#)?|SSN\s*[:=-]|Social\s+Security\s+Number)\s*[:=-]?\s*([A-Za-z0-9_-]{4,20})"),
         PIIType.GOVERNMENT_ID,
         0.98,
         Severity.CRITICAL,
@@ -95,13 +95,21 @@ CONTEXT_RULES = [
         Severity.HIGH,
         "Phone number with explicit telephone/mobile keyword label.",
     ),
-    # Address with Label
+    # Address with Label (Structure 1: numeric prefix like '124 Elm Street, Springfield')
     (
-        re.compile(r"(?i)\b(?:Address|Billing\s+Address|Home\s+Address|Residence)\s*[:=-]\s*([0-9]{1,5}\s+[A-Za-z0-9\s,.-]{10,60})"),
+        re.compile(r"(?i)\b(?:Address|Billing\s+Address|Home\s+Address|Residential\s+Address|Permanent\s+Address|Current\s+Address|Residence)\s*[:=-]\s*([0-9]{1,5}\s+[A-Za-z0-9\s,.-]{10,70})"),
         PIIType.ADDRESS,
         0.88,
         Severity.MEDIUM,
         "Postal or residential location preceded by address label.",
+    ),
+    # Address with Label (Structure 2: Flat, Plot, Sector, Suite, or street cue)
+    (
+        re.compile(r"(?i)\b(?:Address|Billing\s+Address|Home\s+Address|Residential\s+Address|Permanent\s+Address|Residence)\s*[:=-][ \t]*((?:Flat|Plot|Sector|Suite|Apt|House|Building|Room)[\s#0-9A-Za-z,.-]{8,75})"),
+        PIIType.ADDRESS,
+        0.90,
+        Severity.MEDIUM,
+        "Apartment, plot, or residential sector location preceded by address label.",
     ),
 ]
 
