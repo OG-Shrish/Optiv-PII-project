@@ -13,23 +13,60 @@ PLACEHOLDER_REGEX = re.compile(
     r"^\[(PERSON|EMAIL|PHONE|EMPLOYEE_ID|GOVERNMENT_ID|ADDRESS|DATE_OF_BIRTH|CREDIT_CARD|IP_ADDRESS|OTHER_PII)_\d+\]$"
 )
 
-# Comprehensive non-person words, document labels, travel/airline terms, and measurements
-# that small NER models occasionally misclassify as PERSON
-NON_PERSON_WORDS = {
+# Characters permitted in personal names (letters, spaces, periods, apostrophes, hyphens)
+NAME_ALLOWED_CHARS = re.compile(r"^[A-Za-z\s.'’\-]+$")
+
+# Cultural / nobiliary particles allowed internally in multi-word personal names
+NAME_PARTICLES = {
+    "van", "von", "de", "del", "della", "di", "da", "la", "le", "du", "des",
+    "bin", "ibn", "al", "el", "ben", "bar", "san", "santa"
+}
+
+# Strictly non-person words: ANY occurrence in a candidate entity immediately disqualifies it.
+STRICT_NON_PERSON_WORDS = {
+    # Technical, computer science, graph theory, algorithm & mathematical concepts
+    "network", "networks", "antiparallel", "residual", "residuals", "algorithm", "algorithms",
+    "subgraph", "subgraphs", "vertex", "vertices", "node", "nodes", "graph", "graphs",
+    "bipartite", "acyclic", "asymptotic", "polynomial", "exponential", "logarithmic",
+    "combinatorial", "stochastic", "deterministic", "heuristic", "heuristics",
+    "recursion", "recursive", "iterative", "iteration", "matrix", "matrices", "vector", "vectors",
+    "tensor", "tensors", "database", "databases", "bandwidth", "latency", "throughput",
+    "encryption", "decryption", "ciphertext", "plaintext", "cryptography", "compiler", "compilers",
+    "bytecode", "middleware", "microservice", "microservices", "pipeline", "pipelines",
+    "topology", "topological", "eigenvalue", "eigenvalues", "eigenvector", "eigenvectors",
+    "convex", "concave", "simplex", "concurrency", "deadlock", "semaphore", "mutex",
+    "checksum", "payload", "packets", "packet", "theorem", "theorems", "lemma", "lemmas",
+    "corollary", "corollaries", "axiom", "axioms", "hypothesis", "hypotheses",
+    "proposition", "propositions", "equation", "equations", "formula", "formulas", "formulae",
+    "function", "functions", "variable", "variables", "parameter", "parameters",
+    "architecture", "architectures", "framework", "frameworks", "interface", "interfaces",
+    "configuration", "configurations", "implementation", "implementations", "documentation",
+    "specification", "specifications", "bibliography", "appendix", "appendices", "abstract", "abstracts",
+    "minimum", "maximum", "optimal", "suboptimal", "augmenting", "capacity", "capacities",
+    "adjacency", "directed", "undirected", "weighted", "unweighted", "flow", "flows", "cut", "cuts",
+    "tree", "trees", "heap", "heaps", "queue", "queues", "stack", "stacks", "array", "arrays",
+    "hash", "hashing", "linear", "nonlinear", "gradient", "descent", "entropy", "variance",
+    "regression", "classification", "clustering", "inference", "neural", "convolution",
+    "transformer", "attention", "embedding", "embeddings", "binary", "ternary", "boolean",
+    "integer", "float", "double", "scalar", "tuple", "pointer", "buffer", "cache", "protocol", "protocols",
+    "routing", "router", "subnet", "firewall", "schema", "schemas", "query", "queries",
+    "index", "indices", "dataset", "datasets", "benchmark", "benchmarks", "metric", "metrics",
+    "precision", "recall", "accuracy", "runtime", "thread", "threads", "algebra",
     # Determiners, modifiers, structural words
     "other", "another", "all", "any", "each", "every", "some", "few", "more", "less",
     "many", "much", "add", "addon", "add-on", "add-ons", "addons", "additional", "added",
     "extra", "new", "old", "first", "last", "next", "previous", "prior", "total", "subtotal",
-    "net", "gross", "grand", "standard", "basic", "special", "general", "main", "sub",
+    "net", "standard", "basic", "special", "general", "main", "sub",
     # Document structure & labels
-    "table", "row", "column", "col", "page", "slide", "section", "header", "footer",
-    "paragraph", "item", "items", "list", "status", "type", "category", "class",
+    "table", "row", "column", "col", "slide", "section", "header", "footer",
+    "paragraph", "item", "items", "list", "status", "type", "category",
     "description", "details", "detail", "summary", "overview", "introduction",
     "conclusion", "note", "notes", "notice", "remark", "remarks", "policy", "terms",
     "condition", "conditions", "rule", "rules", "information", "info", "guidelines",
+    "report", "reports",
     # Travel, airline, transit & ticket terms
     "passport", "visa", "cabin", "baggage", "luggage", "seat", "seats", "ticket", "tickets",
-    "boarding", "flight", "flights", "gate", "gates", "terminal", "airport", "airports",
+    "boarding", "flight", "flights", "terminal", "airport", "airports",
     "airline", "airlines", "airways", "aircraft", "plane", "carrier", "fare", "pnr",
     "booking", "checkin", "check-in", "security", "customs", "immigration", "transit",
     "layover", "stopover", "origin", "destination", "arrival", "arrivals", "departure",
@@ -37,66 +74,78 @@ NON_PERSON_WORDS = {
     "beverage", "beverages", "snack", "snacks", "service", "services", "amenity", "amenities",
     "infant", "child", "adult", "passenger", "traveler", "traveller", "guest", "pass",
     "hand", "checked", "excess", "allowance", "dimension", "dimensions", "weight",
-    "counter", "kiosk", "zone", "bay", "carousel", "hall", "lounge",
+    "counter", "kiosk", "zone", "bay", "carousel", "lounge",
     # Airline brands and carriers
     "akasa", "air", "indigo", "spicejet", "vistara", "airindia", "emirates", "qatar", "lufthansa",
     # ID document types and regulatory keywords
     "identification", "identity", "photo", "proof", "valid", "validity", "mandatory", "required",
-    "requirement", "requirements", "instruction", "instructions", "guideline", "guidelines",
+    "requirement", "requirements", "instruction", "instructions", "guideline",
     "aadhaar", "pan", "voter", "driving", "license", "licence",
-    # Financial and commerce words
-    "price", "prices", "cost", "costs", "amount", "fee", "fees", "charge", "charges",
-    "tax", "taxes", "gst", "vat", "cgst", "sgst", "igst", "discount", "coupon", "voucher",
-    "payment", "paid", "due", "balance", "invoice", "receipt", "bill", "billing", "currency",
-    "usd", "inr", "eur", "gbp",
     # Units of measurement
-    "kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "g", "gm", "gms", "gram", "grams",
-    "lb", "lbs", "pound", "pounds", "oz", "ounce", "ounces", "l", "ltr", "liter", "liters",
-    "ml", "km", "m", "cm", "mm", "in", "ft",
+    "kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "lb", "lbs", "pound", "pounds",
+    "oz", "ounce", "ounces", "ltr", "liter", "liters", "ml", "km", "cm", "mm",
     # Corporate departments, teams, operations & roles
     "customer", "support", "technical", "sales", "marketing", "finance", "accounting", "legal",
     "compliance", "audit", "operations", "administration", "human", "resources", "department",
     "dept", "division", "branch", "group", "team", "desk", "helpdesk", "reception", "center",
     "centre", "office", "hq", "headquarters", "agency", "unit", "management", "staff", "crew",
-    "officer", "agent", "rep", "representative", "specialist", "coordinator", "supervisor",
-    "full", "part", "shift", "associate", "analyst", "lead", "leader", "member",
+    "officer", "rep", "representative", "specialist", "coordinator", "supervisor",
+    "associate", "analyst",
     # Status, state, booleans & null markers
     "active", "inactive", "pending", "confirmed", "approved", "rejected", "declined", "completed",
-    "submitted", "final", "open", "closed", "available", "unavailable", "mandatory", "optional",
+    "submitted", "final", "open", "closed", "available", "unavailable", "optional",
     "applicable", "routine", "urgent", "true", "false", "yes", "no", "none", "null", "nil",
-    "na", "nan", "unknown", "empty", "blank", "missing",
-    # Temporal & calendar terms
+    "na", "nan", "unknown", "empty", "blank", "missing", "full", "part", "shift",
+    # Temporal & calendar terms (unambiguous)
     "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-    "january", "february", "march", "april", "may", "june", "july", "august",
+    "january", "february", "march", "april", "june", "july", "august",
     "september", "october", "november", "december", "today", "yesterday", "tomorrow",
-    "date", "time", "day", "days", "month", "months", "year", "years", "hour", "hours",
-    "minute", "minutes", "min", "mins", "sec", "secs",
+    "time", "date",
     # General corporate / system
     "confidential", "internal", "restricted", "public", "draft", "version", "ver",
-    "code", "ref", "reference", "id", "identifier", "number", "no", "male", "female",
-    "executive", "briefing",
+    "code", "ref", "reference", "identifier", "male", "female", "executive", "briefing",
+    "class", "lead", "leader", "member",
     # Contact and communication labels
-    "email", "mail", "e-mail", "emails", "mailbox", "cell", "phone", "telephone", "tel", "mobile",
-    "fax", "contact", "contacts", "communication", "calling",
+    "email", "mail", "e-mail", "emails", "mailbox", "cell", "telephone", "tel", "mobile",
+    "fax", "communication", "calling",
     # Location, address & geography labels
-    "location", "locations", "address", "addresses", "city", "state", "country", "pincode", "pin",
-    "zipcode", "zip", "postal", "residence", "native", "nationality", "region", "zone",
+    "locations", "addresses", "pincode", "zipcode", "residence", "native", "nationality",
     # Web, social & digital profile labels
     "website", "web", "url", "link", "linkedin", "github", "portfolio", "blog", "twitter",
-    "profile", "profiles", "bio", "biography",
+    "profile", "profiles",
     # Resume, CV, and document section headings
-    "resume", "resumes", "cv", "curriculum", "vitae", "summary", "objective", "experience",
-    "experiences", "education", "educational", "academics", "academic", "skills", "skill",
-    "expertise", "competencies", "competency", "projects", "project", "certifications",
-    "certification", "certified", "licenses", "license", "achievements", "achievement",
-    "awards", "award", "honors", "honor", "publications", "publication", "patents", "patent",
-    "references", "reference", "referees", "referee", "professional", "background",
-    "qualifications", "qualification", "history", "employment", "work", "working", "job",
-    "jobs", "career", "careers", "activities", "activity", "interests", "interest",
-    "hobbies", "hobby", "languages", "language", "declaration", "declarations",
+    "resume", "resumes", "cv", "curriculum", "vitae", "objective", "experience",
+    "experiences", "academics", "competencies", "competency",
+    "certifications", "certification", "certified", "licenses", "achievements", "achievement",
+    "awards", "honors", "publications", "publication", "patents", "patent",
+    "references", "referees", "referee", "background", "qualifications", "qualification",
+    "employment", "activities", "activity", "interests", "interest", "hobbies", "hobby",
+    "declaration", "declarations", "professional", "education", "educational",
+    "skills", "skill", "projects", "project", "work", "job", "career", "careers",
     # Corporate hierarchy & executive title acronyms
     "dgm", "gm", "agm", "vp", "avp", "svp", "evp", "ceo", "cto", "cfo", "coo", "cio", "ciso",
-    "cmo", "cro", "hr", "mgr", "director", "president"
+    "cmo", "cro", "hr", "mgr"
+}
+
+# Common English words/labels that are non-person when appearing alone as a single word or label,
+# but which CAN form valid multi-word personal names (e.g., 'Larry Page', 'Bill Gates', 'Brian May').
+SINGLE_WORD_NON_PERSON_WORDS = {
+    "page", "gate", "gates", "hall", "price", "may", "rose", "bell", "ford", "cook",
+    "baker", "miller", "taylor", "brown", "white", "green", "wood", "stone", "hill",
+    "king", "young", "ward", "miles", "dean", "day", "month", "year",
+    "hour", "minute", "sec", "city", "state", "country", "pin", "zip", "id", "no",
+    "contact", "phone", "address", "location"
+}
+
+# Plural nouns or technical head nouns that, when ending a multi-word phrase, indicate a technical concept.
+TECHNICAL_HEAD_NOUNS = {
+    "edges", "nodes", "graphs", "trees", "paths", "cuts", "flows", "networks",
+    "components", "matrices", "vertices", "algorithms", "equations", "functions",
+    "variables", "constraints", "subgraphs", "layers", "models", "methods",
+    "circuits", "signals", "packets", "protocols", "parameters", "structures",
+    "operations", "systems", "tables", "queues", "stacks", "arrays", "sets",
+    "subsets", "clusters", "distributions", "heuristics", "iterations", "processes",
+    "threads", "caches", "buffers", "properties"
 }
 
 # Corporate & organizational suffixes to distinguish organizations from person names
@@ -107,6 +156,9 @@ ORG_SUFFIX_WORDS = {
     "air", "airlines", "airways", "hospital", "college", "university", "school",
     "institute", "foundation", "group", "industries", "motors", "labs", "laboratory"
 }
+
+# Union set preserved for backward compatibility
+NON_PERSON_WORDS = STRICT_NON_PERSON_WORDS | SINGLE_WORD_NON_PERSON_WORDS
 
 # Known nationalities, demonyms, religions, and political affiliations (true NORP entities)
 # spaCy's statistical model often misclassifies non-Western names ending in '-ish' (e.g. Shrish, Ashish, Girish, Satish)
@@ -148,31 +200,91 @@ def is_valid_person_entity(ent_text: str) -> bool:
     # Person names never span multiple lines
     if "\n" in cleaned or "\r" in cleaned:
         return False
-    # Person names never contain numbers (e.g. '7 Kg', 'Gate 4')
-    if re.search(r"\d", cleaned):
-        return False
-    # Reject entity if it contains disallowed symbols
-    if re.search(r"[/\\@#\$%\^\*\+=\<\>~\|_]", cleaned):
+    # Must only contain characters allowed in personal names (rejects math/code expressions like f(u), O(n), etc.)
+    if not NAME_ALLOWED_CHARS.match(cleaned):
         return False
     # Genuine person names in any language contain at least one vowel
     if not re.search(r"[aeiouyAEIOUY]", cleaned):
         return False
+
     words = re.findall(r"[A-Za-z]+", cleaned)
-    if not words:
+    if not words or len(words) > 5:
         return False
-    # If ANY word in the candidate is a known non-person word, reject immediately
-    if any(w.lower() in NON_PERSON_WORDS for w in words):
+
+    # Check against strictly non-person words
+    if any(w.lower() in STRICT_NON_PERSON_WORDS for w in words):
         return False
-    # If any word in the candidate is an organization suffix, reject
+    # Check against organization suffixes
     if any(w.lower() in ORG_SUFFIX_WORDS for w in words):
         return False
-    # If the combined normalized phrase is in the blocklist
-    if cleaned.lower().replace(" ", "").replace("-", "") in NON_PERSON_WORDS:
+
+    # Single-word name validation
+    if len(words) == 1:
+        w = words[0]
+        if len(w) < 3:
+            return False
+        if not (w.istitle() or (w.isupper() and len(w) >= 3)):
+            return False
+        if w.lower() in SINGLE_WORD_NON_PERSON_WORDS:
+            return False
+        return True
+
+    # Multi-word name validation
+    # Cannot consist solely of single-letter tokens (e.g. 'U V')
+    if all(len(w) == 1 for w in words):
         return False
-    # Single word names must be at least 3 letters and titlecased
-    if len(words) == 1 and (len(words[0]) < 3 or not words[0].istitle()):
+
+    # First and last words must start with an uppercase letter
+    if not (words[0][0].isupper() and words[-1][0].isupper()):
         return False
+
+    # Check each word casing (must be Titlecase, initial, or valid particle)
+    is_all_caps = all(w.isupper() for w in words)
+    if not is_all_caps:
+        for idx, w in enumerate(words):
+            if idx == 0 or idx == len(words) - 1:
+                if not (w.istitle() or (len(w) == 1 and w.isupper())):
+                    return False
+            else:
+                if w.lower() in NAME_PARTICLES:
+                    continue
+                if not (w.istitle() or (len(w) == 1 and w.isupper())):
+                    return False
+
+    # Check if phrase ends with a technical head noun (e.g. 'Antiparallel Edges', 'Augmenting Paths')
+    if words[-1].lower() in TECHNICAL_HEAD_NOUNS:
+        return False
+
+    # Reject if combined string is in strict dictionary
+    if cleaned.lower().replace(" ", "").replace("-", "") in STRICT_NON_PERSON_WORDS:
+        return False
+
     return True
+
+
+def has_personal_document_context(text: str) -> bool:
+    """Check if the text block contains contextual evidence of personal/contact/resume information."""
+    if not text:
+        return False
+    # 1. Contact indicators (email address, phone numbers, contact label prefixes)
+    if re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", text):
+        return True
+    if re.search(r"(?i)\b(?:email|cell|mobile|phone|telephone|contact|tel|pincode|zipcode|location|address)\s*[:=-]", text):
+        return True
+    if re.search(r"(?i)\b(?:linkedin\.com|github\.com)\b", text):
+        return True
+
+    # 2. Resume / Candidate / Profile headings or structural markers
+    if re.search(r"(?i)\b(?:curriculum\s+vitae|resume|professional\s+profile|career\s+objective|work\s+experience|educational\s+background|academic\s+qualifications)\b", text):
+        return True
+    if re.search(r"(?i)\b(?:candidate|applicant|passenger|employee|patient|client|attendee|traveler|traveller)\s*[:=-]", text):
+        return True
+
+    # 3. Professional designation / job title cues
+    if re.search(r"(?i)\b(?:dgm|agm|gm|vp|avp|svp|director|manager|engineer|developer|consultant|analyst|architect|specialist|officer|executive)\b", text):
+        return True
+
+    return False
 
 
 def is_standalone_name_line(line: str) -> bool:
@@ -183,15 +295,7 @@ def is_standalone_name_line(line: str) -> bool:
     words = re.findall(r"[A-Za-z]+", cleaned)
     if not (2 <= len(words) <= 4):
         return False
-    # Each word must be either titlecased, an uppercase initial, or all uppercase (for ALL CAPS names)
-    is_title = all(w.istitle() or (len(w) == 1 and w.isupper()) for w in words)
-    is_all_caps = all(w.isupper() and len(w) >= 2 for w in words)
-    if not (is_title or is_all_caps):
-        return False
-    if any(w.lower() in ORG_SUFFIX_WORDS for w in words):
-        return False
-    if any(w.lower() in NON_PERSON_WORDS for w in words):
-        return False
+    # Line must satisfy all personal entity validation rules
     return is_valid_person_entity(cleaned)
 
 
@@ -262,7 +366,7 @@ class NERDetector:
                         end=end_char,
                         text=ent_text,
                         pii_type=PIIType.PERSON,
-                        confidence=0.88,
+                        confidence=0.85,
                         confidence_level=ConfidenceLevel.MEDIUM,
                         detection_method=["NER"],
                         severity=Severity.HIGH,
@@ -325,35 +429,37 @@ class NERDetector:
                         )
                     )
 
-        # Dedicated standalone candidate / personal name lines (e.g. 'Vikas Laxman Ahankari')
-        name_line_pattern = re.compile(
-            r"(?m)^[ \t]*((?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z](?:\.|\b|[a-z]+)|[A-Z]{2,})){1,3})[ \t\r]*$"
-        )
-        for match in name_line_pattern.finditer(text):
-            candidate = match.group(1).strip()
-            if is_standalone_name_line(candidate):
-                start_c = match.start(1)
-                end_c = match.end(1)
-                # Avoid duplicate if a PERSON finding already covers this exact span or a superset
-                if not any(f.start <= start_c and f.end >= end_c for f in findings if f.pii_type == PIIType.PERSON):
-                    findings.append(
-                        PIIFinding(
-                            finding_id=f"ner_name_line_{block_order}_{start_c}",
-                            document_id=document_id,
-                            file_name=file_name,
-                            location=location,
-                            block_order=block_order,
-                            start=start_c,
-                            end=end_c,
-                            text=candidate,
-                            pii_type=PIIType.PERSON,
-                            confidence=0.94,
-                            confidence_level=ConfidenceLevel.HIGH,
-                            detection_method=["NER"],
-                            severity=Severity.HIGH,
-                            explanation="Personal candidate name identified on dedicated header line.",
-                            masked_text=mask_sensitive_value(candidate, "PERSON"),
+        # Standalone candidate / personal name lines (e.g. 'Vikas Laxman Ahankari')
+        # Only activated when the surrounding block provides supporting personal/contact/resume context
+        if has_personal_document_context(text):
+            name_line_pattern = re.compile(
+                r"(?m)^[ \t]*((?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z](?:\.|\b|[a-z]+)|[A-Z]{2,})){1,3})[ \t\r]*$"
+            )
+            for match in name_line_pattern.finditer(text):
+                candidate = match.group(1).strip()
+                if is_standalone_name_line(candidate):
+                    start_c = match.start(1)
+                    end_c = match.end(1)
+                    # Avoid duplicate if a PERSON finding already covers this exact span or a superset
+                    if not any(f.start <= start_c and f.end >= end_c for f in findings if f.pii_type == PIIType.PERSON):
+                        findings.append(
+                            PIIFinding(
+                                finding_id=f"ner_name_line_{block_order}_{start_c}",
+                                document_id=document_id,
+                                file_name=file_name,
+                                location=location,
+                                block_order=block_order,
+                                start=start_c,
+                                end=end_c,
+                                text=candidate,
+                                pii_type=PIIType.PERSON,
+                                confidence=0.88,
+                                confidence_level=ConfidenceLevel.MEDIUM,
+                                detection_method=["NER"],
+                                severity=Severity.HIGH,
+                                explanation="Personal candidate name identified on header line with supporting contextual cues.",
+                                masked_text=mask_sensitive_value(candidate, "PERSON"),
+                            )
                         )
-                    )
 
         return findings

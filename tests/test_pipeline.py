@@ -83,3 +83,40 @@ def test_clean_document_passes():
     assert result.security_status == SecurityStatus.SANITIZED
     assert len(result.pii_findings) == 0
     assert result.validation_result.is_safe is True
+
+
+def test_technical_document_pipeline_sanitization():
+    """Verify that technical documents with math, algorithm names, and real PII are sanitized without false positives."""
+    pipeline = GatewayPipeline()
+    doc_text = (
+        "FLOW NETWORK OPTIMIZATION REPORT\n\n"
+        "1. Overview\n"
+        "We consider a Flow Network G = (V, E) and eliminate Antiparallel Edges.\n"
+        "The Residual Network yields a Minimum Cut of capacity 42.\n"
+        "Constraint verification: f(u, v) <= c(u, v) and f(u) = 0.\n\n"
+        "Lead Investigator: Dr. Alice Henderson\n"
+        "Contact Email: alice.henderson@secure-corp.com\n"
+        "Phone: +1 212 555 1234\n"
+    )
+    result = pipeline.process_document(doc_text.encode("utf-8"), "flow_network_report.txt")
+
+    assert result.security_status == SecurityStatus.SANITIZED
+    assert result.validation_result.passed is True
+    assert len(result.validation_result.residual_findings) == 0
+
+    sanitized = result.redaction_result.redacted_full_text
+    # Real PII must be redacted
+    assert "alice.henderson@secure-corp.com" not in sanitized
+    assert "+1 212 555 1234" not in sanitized
+    assert "[EMAIL_" in sanitized
+    assert "[PHONE_" in sanitized
+
+    # Technical terms and formulas must NOT be redacted
+    assert "Flow Network" in sanitized
+    assert "Antiparallel Edges" in sanitized
+    assert "Residual Network" in sanitized
+    assert "Minimum Cut" in sanitized
+    assert "f(u, v)" in sanitized
+    assert "c(u, v)" in sanitized
+    assert "f(u)" in sanitized
+

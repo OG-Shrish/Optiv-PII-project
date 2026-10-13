@@ -227,3 +227,93 @@ def test_resume_candidate_name_and_contact_labels():
     assert finding_map["vikas.ahankari@rediffmail.com"] == PIIType.EMAIL
     assert "+91 9876543210" in finding_map
     assert finding_map["+91 9876543210"] == PIIType.PHONE
+
+
+def test_technical_terms_not_flagged_as_person():
+    """Ensure algorithm names, graph theory concepts, and CS terminology are not flagged as PERSON."""
+    engine = PIIEngine()
+    technical_samples = [
+        "Flow Network",
+        "Antiparallel Edges",
+        "Residual Network",
+        "Minimum Cut",
+        "Maximum Flow",
+        "Augmenting Paths",
+        "Residual Capacity",
+        "Breadth-First Search",
+        "Adjacency Matrix",
+        "Spanning Tree",
+        "Greedy Algorithm",
+    ]
+    for term in technical_samples:
+        findings = engine.detect_raw_text(term)
+        person_findings = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+        assert len(person_findings) == 0, f"Technical term {term!r} was falsely classified as PERSON: {person_findings}"
+
+
+def test_mathematical_expressions_not_flagged_as_person():
+    """Ensure mathematical expressions and function notations are not classified as PERSON."""
+    engine = PIIEngine()
+    math_samples = [
+        "f(u)",
+        "c(u)",
+        "f(u, v)",
+        "c(u, v) - f(u, v)",
+        "G = (V, E)",
+        "O(V E^2)",
+        "f(u) <= c(u)",
+        "Capacity constraint: f(u, v) <= c(u, v) for all edges (u, v).",
+    ]
+    for expr in math_samples:
+        findings = engine.detect_raw_text(expr)
+        person_findings = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+        assert len(person_findings) == 0, f"Math expression {expr!r} was falsely classified as PERSON: {person_findings}"
+
+
+def test_technical_headings_and_names_in_realistic_document_context():
+    """Ensure technical headings and terms in mixed documents are ignored while genuine names are detected."""
+    engine = PIIEngine()
+    mixed_doc = (
+        "Flow Network Analysis\n\n"
+        "Section 1.2: Antiparallel Edges\n"
+        "We construct the Residual Network and find the Minimum Cut.\n"
+        "Formula: f(u, v) <= c(u, v) and f(u) = 0.\n\n"
+        "Lead Researcher: Dr. Alice Henderson\n"
+        "Email: alice.henderson@research-lab.org\n"
+        "Contact Person: Robert Langdon\n"
+        "Candidate Name: Vikas Laxman Ahankari\n"
+        "Applicant: Pooja Sharma\n"
+    )
+    findings = engine.detect_raw_text(mixed_doc)
+    person_names = {f.text for f in findings if f.pii_type == PIIType.PERSON}
+
+    # Genuine people must be detected
+    assert "Alice Henderson" in person_names
+    assert "Robert Langdon" in person_names
+    assert "Vikas Laxman Ahankari" in person_names
+    assert "Pooja Sharma" in person_names
+
+    # Technical terms and math must NOT be classified as PERSON
+    assert "Flow Network" not in person_names
+    assert "Flow Network Analysis" not in person_names
+    assert "Antiparallel Edges" not in person_names
+    assert "Residual Network" not in person_names
+    assert "Minimum Cut" not in person_names
+    assert not any("f(u" in n for n in person_names)
+    assert not any("c(u" in n for n in person_names)
+
+
+def test_names_with_common_word_surnames_preserved():
+    """Ensure legitimate multi-word names containing words that are also common nouns are detected."""
+    ner = NERDetector()
+    if not ner.is_available:
+        return
+    text = "We consulted Larry Page, Bill Gates, Vincent Price, and Brian May regarding the initiative."
+    findings = ner.detect(text, "d1", "test.txt", "p1", 0)
+    person_names = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+
+    assert any("Larry Page" in n for n in person_names)
+    assert any("Bill Gates" in n for n in person_names)
+    assert any("Vincent Price" in n for n in person_names)
+    assert any("Brian May" in n for n in person_names)
+
