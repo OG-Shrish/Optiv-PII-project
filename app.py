@@ -27,7 +27,8 @@ from reporting.report_generator import ReportGenerator
 from utils.helpers import calculate_file_hash
 
 # ------------------------------------------------------------------------------
-# 1. PAGE CONFIGURATION & VIBRANT WHITE DESIGN SYSTEM
+# ------------------------------------------------------------------------------
+# 1. PAGE CONFIGURATION & DYNAMIC DESIGN SYSTEM (LIGHT & VIBRANT NIGHT MODES)
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="PII Security Gateway | Enterprise Privacy Gate",
@@ -36,16 +37,103 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-VIBRANT_SAAS_CSS = """
-<style>
-    /* Design Tokens: Vibrant White-Background SaaS Theme */
-    :root {
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "light"
+
+
+def get_vibrant_css(is_dark: bool) -> str:
+    """Generate dynamic CSS tokens and styles for Light SaaS Mode and Vibrant Night SOC Mode."""
+    if is_dark:
+        # Vibrant Night Theme Tokens
+        theme_vars = """
+        --bg-app: #0B1220;
+        --bg-surface: #111C30;
+        --bg-card: #14223C;
+        --border-subtle: #1E3156;
+        --border-hover: #334B7D;
+        --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+        --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 14px rgba(99, 102, 241, 0.3);
+
+        --text-headline: #F8FAFC;
+        --text-body: #E2E8F0;
+        --text-secondary: #94A3B8;
+        --text-muted: #64748B;
+
+        /* Vibrant Brand Palette */
+        --brand-blue: #3B82F6;
+        --brand-indigo: #6366F1;
+        --brand-violet: #A855F7;
+        --brand-teal: #14B8A6;
+        --brand-cyan: #06B6D4;
+
+        /* High-contrast vibrant security state tokens */
+        --safe-green: #10B981;
+        --safe-bg: rgba(16, 185, 129, 0.14);
+        --safe-border: rgba(16, 185, 129, 0.45);
+        --safe-text: #34D399;
+
+        --blocked-red: #F43F5E;
+        --blocked-bg: rgba(244, 63, 94, 0.16);
+        --blocked-border: rgba(244, 63, 94, 0.45);
+        --blocked-text: #FB7185;
+
+        --review-amber: #F59E0B;
+        --review-bg: rgba(245, 158, 11, 0.16);
+        --review-border: rgba(245, 158, 11, 0.45);
+        --review-text: #FBBF24;
+
+        --staged-bg: rgba(59, 130, 246, 0.15);
+        --staged-border: rgba(59, 130, 246, 0.45);
+        --staged-text: #60A5FA;
+
+        --preview-bg: #070D18;
+        --preview-border: #1E3156;
+
+        --btn-sec-bg: #172642;
+        --btn-sec-text: #F8FAFC;
+        --btn-sec-border: #2A4068;
+        --btn-sec-hover-bg: #1E3358;
+        --btn-sec-hover-border: #6366F1;
+        --btn-sec-hover-text: #818CF8;
+
+        --uploader-bg: #14223C;
+        --uploader-border: #2E456E;
+        --uploader-hover-bg: #192A4A;
+
+        --step-extract-bg: rgba(99, 102, 241, 0.1);
+        --step-extract-border: rgba(99, 102, 241, 0.45);
+        --step-detect-bg: rgba(168, 85, 247, 0.1);
+        --step-detect-border: rgba(168, 85, 247, 0.45);
+        --step-risk-bg: rgba(249, 115, 22, 0.1);
+        --step-risk-border: rgba(249, 115, 22, 0.45);
+        --step-redact-bg: rgba(59, 130, 246, 0.1);
+        --step-redact-border: rgba(59, 130, 246, 0.45);
+        --step-pass-bg: rgba(16, 185, 129, 0.12);
+        --step-pass-border: rgba(16, 185, 129, 0.45);
+        --step-fail-bg: rgba(244, 63, 94, 0.14);
+        --step-fail-border: rgba(244, 63, 94, 0.45);
+
+        --stripe-glow-indigo: 0 -2px 10px rgba(99, 102, 241, 0.5);
+        --stripe-glow-violet: 0 -2px 10px rgba(168, 85, 247, 0.5);
+        --stripe-glow-rose: 0 -2px 10px rgba(244, 63, 94, 0.5);
+        --stripe-glow-emerald: 0 -2px 10px rgba(16, 185, 129, 0.5);
+        --stripe-glow-amber: 0 -2px 10px rgba(245, 158, 11, 0.5);
+
+        --badge-brand-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        --badge-brand-border: rgba(99, 102, 241, 0.45);
+        --badge-brand-text: #A5B4FC;
+        """
+    else:
+        # Vibrant Light Theme Tokens
+        theme_vars = """
         --bg-app: #FFFFFF;
         --bg-surface: #F8FAFC;
         --bg-card: #FFFFFF;
         --border-subtle: #E2E8F0;
         --border-hover: #CBD5E1;
-        
+        --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+        --shadow-card-hover: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+
         --text-headline: #0F172A;
         --text-body: #1E293B;
         --text-secondary: #475569;
@@ -73,30 +161,77 @@ VIBRANT_SAAS_CSS = """
         --review-bg: #FFFBEB;
         --review-border: #FDE68A;
         --review-text: #92400E;
-    }
+
+        --staged-bg: #EFF6FF;
+        --staged-border: #BFDBFE;
+        --staged-text: #1E40AF;
+
+        --preview-bg: #FFFFFF;
+        --preview-border: #E2E8F0;
+
+        --btn-sec-bg: #FFFFFF;
+        --btn-sec-text: #0F172A;
+        --btn-sec-border: #E2E8F0;
+        --btn-sec-hover-bg: #F8FAFC;
+        --btn-sec-hover-border: #C7D2FE;
+        --btn-sec-hover-text: #4F46E5;
+
+        --uploader-bg: #FFFFFF;
+        --uploader-border: #CBD5E1;
+        --uploader-hover-bg: #FAFAFE;
+
+        --step-extract-bg: #FAFAFF;
+        --step-extract-border: #C7D2FE;
+        --step-detect-bg: #FAF5FF;
+        --step-detect-border: #DDD6FE;
+        --step-risk-bg: #FFFDF9;
+        --step-risk-border: #FED7AA;
+        --step-redact-bg: #F8FAFF;
+        --step-redact-border: #BFDBFE;
+        --step-pass-bg: #F8FCF9;
+        --step-pass-border: #A7F3D0;
+        --step-fail-bg: #FEF2F2;
+        --step-fail-border: #FECACA;
+
+        --stripe-glow-indigo: none;
+        --stripe-glow-violet: none;
+        --stripe-glow-rose: none;
+        --stripe-glow-emerald: none;
+        --stripe-glow-amber: none;
+
+        --badge-brand-bg: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%);
+        --badge-brand-border: #C7D2FE;
+        --badge-brand-text: #4F46E5;
+        """
+
+    return f"""
+<style>
+    :root {{
+        {theme_vars}
+    }}
 
     /* Base Styling */
-    .stApp {
+    .stApp {{
         background-color: var(--bg-app) !important;
         color: var(--text-body) !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
+    }}
 
-    .main .block-container {
+    .main .block-container {{
         padding-top: 1.25rem !important;
         padding-bottom: 2.5rem !important;
         max-width: 1440px;
-    }
+    }}
 
-    h1, h2, h3, h4, h5, h6 {
+    h1, h2, h3, h4, h5, h6 {{
         color: var(--text-headline) !important;
         font-weight: 700 !important;
         letter-spacing: -0.025em;
-    }
+    }}
 
-    /* Vibrant SaaS Header */
-    .saas-header-card {
-        background-color: #FFFFFF;
+    /* Vibrant SaaS / SOC Header */
+    .saas-header-card {{
+        background-color: var(--bg-card);
         border: 1px solid var(--border-subtle);
         border-radius: 12px;
         padding: 16px 22px;
@@ -106,26 +241,26 @@ VIBRANT_SAAS_CSS = """
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 16px;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-    }
-    .saas-brand-group {
+        box-shadow: var(--shadow-card);
+    }}
+    .saas-brand-group {{
         display: flex;
         align-items: center;
         gap: 14px;
-    }
-    .saas-brand-icon {
+    }}
+    .saas-brand-icon {{
         width: 44px;
         height: 44px;
-        background: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%);
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-indigo) 50%, var(--brand-violet) 100%);
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 22px;
         color: #FFFFFF;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-    }
-    .saas-brand-title {
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }}
+    .saas-brand-title {{
         font-size: 20px;
         font-weight: 800;
         color: var(--text-headline);
@@ -135,24 +270,44 @@ VIBRANT_SAAS_CSS = """
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-    .saas-brand-badge {
-        background: linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 100%);
-        color: #4F46E5;
-        border: 1px solid #C7D2FE;
+        flex-wrap: wrap;
+    }}
+    .saas-brand-badge {{
+        background: var(--badge-brand-bg);
+        color: var(--badge-brand-text);
+        border: 1px solid var(--badge-brand-border);
         font-size: 10.5px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         padding: 2px 8px;
         border-radius: 20px;
-    }
-    .saas-brand-sub {
+    }}
+    .saas-theme-badge {{
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 20px;
+    }}
+    .saas-theme-badge-light {{
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+    }}
+    .saas-theme-badge-dark {{
+        background: rgba(99, 102, 241, 0.2);
+        color: #A5B4FC;
+        border: 1px solid rgba(99, 102, 241, 0.5);
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    }}
+    .saas-brand-sub {{
         font-size: 12.5px;
         color: var(--text-muted);
         margin-top: 2px;
-    }
-    .saas-status-pill {
+    }}
+    .saas-status-pill {{
         display: inline-flex;
         align-items: center;
         gap: 7px;
@@ -161,47 +316,47 @@ VIBRANT_SAAS_CSS = """
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.02em;
-    }
-    .pill-sanitized {
+    }}
+    .pill-sanitized {{
         background-color: var(--safe-bg);
         border: 1px solid var(--safe-border);
         color: var(--safe-text);
-    }
-    .pill-blocked {
+    }}
+    .pill-blocked {{
         background-color: var(--blocked-bg);
         border: 1px solid var(--blocked-border);
         color: var(--blocked-text);
-    }
-    .pill-review {
+    }}
+    .pill-review {{
         background-color: var(--review-bg);
         border: 1px solid var(--review-border);
         color: var(--review-text);
-    }
-    .pill-staged {
-        background-color: #EFF6FF;
-        border: 1px solid #BFDBFE;
-        color: #1E40AF;
-    }
-    .pill-standby {
+    }}
+    .pill-staged {{
+        background-color: var(--staged-bg);
+        border: 1px solid var(--staged-border);
+        color: var(--staged-text);
+    }}
+    .pill-standby {{
         background-color: var(--bg-surface);
         border: 1px solid var(--border-subtle);
         color: var(--text-muted);
-    }
-    .status-dot {
+    }}
+    .status-dot {{
         width: 7px;
         height: 7px;
         border-radius: 50%;
         display: inline-block;
-    }
-    .dot-sanitized { background-color: var(--safe-green); box-shadow: 0 0 6px var(--safe-green); }
-    .dot-blocked { background-color: var(--blocked-red); box-shadow: 0 0 6px var(--blocked-red); }
-    .dot-review { background-color: var(--review-amber); box-shadow: 0 0 6px var(--review-amber); }
-    .dot-staged { background-color: #3B82F6; box-shadow: 0 0 6px #3B82F6; }
-    .dot-standby { background-color: #94A3B8; }
+    }}
+    .dot-sanitized {{ background-color: var(--safe-green); box-shadow: 0 0 8px var(--safe-green); }}
+    .dot-blocked {{ background-color: var(--blocked-red); box-shadow: 0 0 8px var(--blocked-red); }}
+    .dot-review {{ background-color: var(--review-amber); box-shadow: 0 0 8px var(--review-amber); }}
+    .dot-staged {{ background-color: var(--brand-blue); box-shadow: 0 0 8px var(--brand-blue); }}
+    .dot-standby {{ background-color: var(--text-muted); }}
 
     /* 5 Vibrant Metric Cards */
-    .metric-card-vibrant {
-        background-color: #FFFFFF;
+    .metric-card-vibrant {{
+        background-color: var(--bg-card);
         border: 1px solid var(--border-subtle);
         border-radius: 10px;
         padding: 16px 18px;
@@ -212,80 +367,80 @@ VIBRANT_SAAS_CSS = """
         position: relative;
         overflow: hidden;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-    }
-    .metric-card-vibrant:hover {
+        box-shadow: var(--shadow-card);
+    }}
+    .metric-card-vibrant:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+        box-shadow: var(--shadow-card-hover);
         border-color: var(--border-hover);
-    }
-    .metric-stripe-indigo { border-top: 3px solid #4F46E5; }
-    .metric-stripe-violet { border-top: 3px solid #7C3AED; }
-    .metric-stripe-rose { border-top: 3px solid #EF4444; }
-    .metric-stripe-emerald { border-top: 3px solid #10B981; }
-    .metric-stripe-amber { border-top: 3px solid #F59E0B; }
+    }}
+    .metric-stripe-indigo {{ border-top: 3px solid var(--brand-indigo); box-shadow: var(--stripe-glow-indigo); }}
+    .metric-stripe-violet {{ border-top: 3px solid var(--brand-violet); box-shadow: var(--stripe-glow-violet); }}
+    .metric-stripe-rose {{ border-top: 3px solid var(--blocked-red); box-shadow: var(--stripe-glow-rose); }}
+    .metric-stripe-emerald {{ border-top: 3px solid var(--safe-green); box-shadow: var(--stripe-glow-emerald); }}
+    .metric-stripe-amber {{ border-top: 3px solid var(--review-amber); box-shadow: var(--stripe-glow-amber); }}
 
-    .metric-header-row {
+    .metric-header-row {{
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 6px;
-    }
-    .metric-label-txt {
+    }}
+    .metric-label-txt {{
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-    }
-    .metric-label-indigo { color: #4F46E5; }
-    .metric-label-violet { color: #7C3AED; }
-    .metric-label-rose { color: #EF4444; }
-    .metric-label-emerald { color: #059669; }
-    .metric-label-amber { color: #D97706; }
+    }}
+    .metric-label-indigo {{ color: var(--brand-indigo); }}
+    .metric-label-violet {{ color: var(--brand-violet); }}
+    .metric-label-rose {{ color: var(--blocked-red); }}
+    .metric-label-emerald {{ color: var(--safe-green); }}
+    .metric-label-amber {{ color: var(--review-amber); }}
 
-    .metric-icon-box {
+    .metric-icon-box {{
         font-size: 15px;
-    }
-    .metric-main-val {
+    }}
+    .metric-main-val {{
         font-size: 30px;
         font-weight: 800;
         line-height: 1.1;
         color: var(--text-headline);
         margin-bottom: 4px;
         letter-spacing: -0.02em;
-    }
-    .metric-sub-txt {
+    }}
+    .metric-sub-txt {{
         font-size: 11.5px;
         color: var(--text-muted);
         font-weight: 500;
-    }
+    }}
 
     /* Section Headers */
-    .section-title-wrap {
+    .section-title-wrap {{
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 12px;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--border-subtle);
-    }
-    .section-title-text {
+    }}
+    .section-title-text {{
         font-size: 13.5px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: var(--text-secondary);
         margin: 0;
-    }
-    .section-desc-text {
+    }}
+    .section-desc-text {{
         font-size: 12px;
         color: var(--text-muted);
         margin: 0;
-    }
+    }}
 
     /* Active Staged Artifact Card */
-    .staged-artifact-card {
-        background-color: #FFFFFF;
+    .staged-artifact-card {{
+        background-color: var(--bg-card);
         border: 1px solid var(--border-subtle);
         border-left: 4px solid var(--brand-indigo);
         border-radius: 8px;
@@ -297,83 +452,107 @@ VIBRANT_SAAS_CSS = """
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 12px;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-    }
-    .staged-left-info {
+        box-shadow: var(--shadow-card);
+    }}
+    .staged-left-info {{
         display: flex;
         align-items: center;
         gap: 12px;
-    }
-    .staged-badge-format {
-        background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-        color: #4338CA;
-        border: 1px solid #C7D2FE;
+    }}
+    .staged-badge-format {{
+        background: var(--badge-brand-bg);
+        color: var(--badge-brand-text);
+        border: 1px solid var(--badge-brand-border);
         font-size: 11px;
         font-weight: 800;
         padding: 4px 8px;
         border-radius: 6px;
         letter-spacing: 0.05em;
-    }
-    .staged-name-text {
+    }}
+    .staged-name-text {{
         font-size: 14px;
         font-weight: 700;
         color: var(--text-headline);
-    }
-    .staged-meta-text {
+    }}
+    .staged-meta-text {{
         font-size: 12px;
         color: var(--text-muted);
         margin-top: 2px;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
+    }}
 
     /* 5-Stage Visual Progression Stepper */
-    .stepper-5stage-grid {
+    .stepper-5stage-grid {{
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         gap: 10px;
         margin-bottom: 16px;
-    }
-    @media (max-width: 1024px) {
-        .stepper-5stage-grid {
+    }}
+    @media (max-width: 1024px) {{
+        .stepper-5stage-grid {{
             grid-template-columns: repeat(3, 1fr);
-        }
-    }
-    .step-box-cell {
-        background-color: #FFFFFF;
+        }}
+    }}
+    .step-box-cell {{
+        background-color: var(--bg-card);
         border: 1px solid var(--border-subtle);
         border-radius: 8px;
         padding: 12px 14px;
         text-align: left;
         transition: all 0.2s ease;
-    }
-    .step-box-cell:hover {
+    }}
+    .step-box-cell:hover {{
         border-color: var(--border-hover);
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-    }
-    .step-tag-text {
+        box-shadow: var(--shadow-card);
+    }}
+    .step-cell-extract {{
+        background-color: var(--step-extract-bg) !important;
+        border-color: var(--step-extract-border) !important;
+    }}
+    .step-cell-detect {{
+        background-color: var(--step-detect-bg) !important;
+        border-color: var(--step-detect-border) !important;
+    }}
+    .step-cell-risk {{
+        background-color: var(--step-risk-bg) !important;
+        border-color: var(--step-risk-border) !important;
+    }}
+    .step-cell-redact {{
+        background-color: var(--step-redact-bg) !important;
+        border-color: var(--step-redact-border) !important;
+    }}
+    .step-cell-pass {{
+        background-color: var(--step-pass-bg) !important;
+        border-color: var(--step-pass-border) !important;
+    }}
+    .step-cell-fail {{
+        background-color: var(--step-fail-bg) !important;
+        border-color: var(--step-fail-border) !important;
+    }}
+    .step-tag-text {{
         font-size: 10px;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.07em;
         margin-bottom: 4px;
-    }
-    .step-done-tag { color: #059669; }
-    .step-title-text {
+    }}
+    .step-done-tag {{ color: var(--safe-green); }}
+    .step-title-text {{
         font-size: 12.5px;
         font-weight: 700;
         color: var(--text-headline);
         margin-bottom: 2px;
-    }
-    .step-sub-text {
+    }}
+    .step-sub-text {{
         font-size: 11px;
         color: var(--text-muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-    }
+    }}
 
     /* Executive Security Gate Verdict Banner */
-    .verdict-banner-card {
+    .verdict-banner-card {{
         border-radius: 10px;
         padding: 18px 22px;
         margin-bottom: 20px;
@@ -382,75 +561,76 @@ VIBRANT_SAAS_CSS = """
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 16px;
-    }
-    .verdict-bg-sanitized {
+        box-shadow: var(--shadow-card);
+    }}
+    .verdict-bg-sanitized {{
         background-color: var(--safe-bg);
         border: 1px solid var(--safe-border);
-    }
-    .verdict-bg-blocked {
+    }}
+    .verdict-bg-blocked {{
         background-color: var(--blocked-bg);
         border: 1px solid var(--blocked-border);
-    }
-    .verdict-bg-review {
+    }}
+    .verdict-bg-review {{
         background-color: var(--review-bg);
         border: 1px solid var(--review-border);
-    }
-    .verdict-primary-col {
+    }}
+    .verdict-primary-col {{
         display: flex;
         align-items: flex-start;
         gap: 14px;
         max-width: 820px;
-    }
-    .verdict-icon-symbol {
+    }}
+    .verdict-icon-symbol {{
         font-size: 24px;
         line-height: 1.1;
-    }
-    .verdict-title-headline {
+    }}
+    .verdict-title-headline {{
         font-size: 15.5px;
         font-weight: 800;
         margin-bottom: 4px;
         letter-spacing: -0.01em;
-    }
-    .verdict-bg-sanitized .verdict-title-headline { color: var(--safe-text); }
-    .verdict-bg-blocked .verdict-title-headline { color: var(--blocked-text); }
-    .verdict-bg-review .verdict-title-headline { color: var(--review-text); }
-    .verdict-body-desc {
+    }}
+    .verdict-bg-sanitized .verdict-title-headline {{ color: var(--safe-text); }}
+    .verdict-bg-blocked .verdict-title-headline {{ color: var(--blocked-text); }}
+    .verdict-bg-review .verdict-title-headline {{ color: var(--review-text); }}
+    .verdict-body-desc {{
         font-size: 13px;
         line-height: 1.5;
         color: var(--text-secondary);
-    }
-    .verdict-telemetry-strip {
+    }}
+    .verdict-telemetry-strip {{
         display: flex;
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
-    }
-    .verdict-metric-pill {
-        background-color: #FFFFFF;
-        border: 1px solid rgba(15, 23, 42, 0.08);
+    }}
+    .verdict-metric-pill {{
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
         border-radius: 8px;
         padding: 6px 12px;
         text-align: center;
         min-width: 84px;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
-    }
-    .v-pill-lbl {
+        box-shadow: var(--shadow-card);
+    }}
+    .v-pill-lbl {{
         font-size: 9.5px;
         font-weight: 700;
         text-transform: uppercase;
         color: var(--text-muted);
         letter-spacing: 0.05em;
-    }
-    .v-pill-num {
+    }}
+    .v-pill-num {{
         font-size: 15px;
         font-weight: 800;
         color: var(--text-headline);
-    }
+    }}
 
     /* Monospaced Document Preview */
-    .preview-doc-box {
-        background-color: #FFFFFF;
-        border: 1px solid var(--border-subtle);
+    .preview-doc-box {{
+        background-color: var(--preview-bg);
+        border: 1px solid var(--preview-border);
         border-radius: 8px;
         padding: 16px 18px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -460,12 +640,64 @@ VIBRANT_SAAS_CSS = """
         white-space: pre-wrap;
         max-height: 480px;
         overflow-y: auto;
-        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02);
-    }
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+    }}
 
-    /* Primary Action Button Polish: Vibrant Gradient */
-    div.stButton > button:first-child {
-        background: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%) !important;
+    /* Card helpers for architecture, telemetry, validation, risk, and raw blocks */
+    .architecture-doc-card {{
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-left: 4px solid var(--brand-indigo);
+        border-radius: 10px;
+        padding: 22px 26px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-card);
+        line-height: 1.65;
+    }}
+    .architecture-callout-box {{
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }}
+    .telemetry-chart-card {{
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 18px 20px;
+        box-shadow: var(--shadow-card);
+    }}
+    .risk-metric-box {{
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 12px 14px;
+        text-align: center;
+    }}
+    .validation-audit-card {{
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
+    }}
+    .raw-block-card {{
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-left: 3px solid var(--brand-indigo);
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+    }}
+
+    /* Buttons: Primary Vibrant Action */
+    div.stButton > button[kind="primary"],
+    div.stButton > button[data-testid="baseButton-primary"],
+    button[kind="primary"] {{
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-indigo) 50%, var(--brand-violet) 100%) !important;
         color: #FFFFFF !important;
         font-weight: 700 !important;
         border: none !important;
@@ -473,60 +705,129 @@ VIBRANT_SAAS_CSS = """
         padding: 8px 18px !important;
         font-size: 13px !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25) !important;
-    }
-    div.stButton > button:first-child:hover {
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
+    }}
+    div.stButton > button[kind="primary"]:hover,
+    button[kind="primary"]:hover {{
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
-    }
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55) !important;
+    }}
+
+    /* Secondary / Navigation Buttons */
+    div.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {{
+        background-color: var(--btn-sec-bg) !important;
+        color: var(--btn-sec-text) !important;
+        border: 1px solid var(--btn-sec-border) !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-size: 12.5px !important;
+        padding: 7px 14px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: var(--shadow-card) !important;
+    }}
+    div.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover {{
+        background-color: var(--btn-sec-hover-bg) !important;
+        border-color: var(--btn-sec-hover-border) !important;
+        color: var(--btn-sec-hover-text) !important;
+        transform: translateY(-1px) !important;
+    }}
 
     /* Secondary / Download Buttons */
-    div.stDownloadButton > button {
-        background-color: #FFFFFF !important;
-        color: var(--text-headline) !important;
-        border: 1px solid var(--border-subtle) !important;
+    div.stDownloadButton > button {{
+        background-color: var(--btn-sec-bg) !important;
+        color: var(--btn-sec-text) !important;
+        border: 1px solid var(--btn-sec-border) !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         font-size: 12.5px !important;
         padding: 7px 16px !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
-    }
-    div.stDownloadButton > button:hover {
-        background-color: var(--bg-surface) !important;
-        border-color: #C7D2FE !important;
-        color: var(--brand-indigo) !important;
-    }
+        box-shadow: var(--shadow-card) !important;
+    }}
+    div.stDownloadButton > button:hover {{
+        background-color: var(--btn-sec-hover-bg) !important;
+        border-color: var(--btn-sec-hover-border) !important;
+        color: var(--btn-sec-hover-text) !important;
+        transform: translateY(-1px) !important;
+    }}
 
     /* Streamlit Tabs Polish */
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 6px;
         border-bottom: 1px solid var(--border-subtle);
         padding-bottom: 2px;
-    }
-    .stTabs [data-baseweb="tab"] {
+    }}
+    .stTabs [data-baseweb="tab"] {{
         padding: 8px 16px;
         font-size: 13px;
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--text-secondary);
         border-radius: 6px 6px 0 0;
-    }
-    .stTabs [aria-selected="true"] {
+    }}
+    .stTabs [aria-selected="true"] {{
         color: var(--brand-indigo) !important;
         border-bottom: 2px solid var(--brand-indigo) !important;
-    }
+    }}
 
     /* File Uploader Polishing */
-    [data-testid="stFileUploader"] section {
-        background-color: #FFFFFF !important;
-        border: 1px dashed #CBD5E1 !important;
+    [data-testid="stFileUploader"] section {{
+        background-color: var(--uploader-bg) !important;
+        border: 1px dashed var(--uploader-border) !important;
         border-radius: 8px !important;
         padding: 16px 20px !important;
         transition: border-color 0.2s ease;
-    }
-    [data-testid="stFileUploader"] section:hover {
+    }}
+    [data-testid="stFileUploader"] section:hover {{
         border-color: var(--brand-indigo) !important;
-        background-color: #FAFAFE !important;
-    }
+        background-color: var(--uploader-hover-bg) !important;
+    }}
+    [data-testid="stFileUploader"] section div,
+    [data-testid="stFileUploader"] section span,
+    [data-testid="stFileUploader"] section small {{
+        color: var(--text-secondary) !important;
+    }}
+
+    /* Dark Mode Selectbox, Inputs & Checkboxes */
+    div[data-baseweb="select"] > div {{
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-subtle) !important;
+        color: var(--text-headline) !important;
+    }}
+    div[data-baseweb="popover"] > div,
+    div[data-baseweb="popover"] ul {{
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-subtle) !important;
+        color: var(--text-headline) !important;
+    }}
+    div[data-baseweb="popover"] li {{
+        background-color: var(--bg-card) !important;
+        color: var(--text-body) !important;
+    }}
+    div[data-baseweb="popover"] li:hover {{
+        background-color: var(--bg-surface) !important;
+        color: var(--brand-indigo) !important;
+    }}
+    div[data-baseweb="select"] span {{
+        color: var(--text-headline) !important;
+    }}
+    div[data-baseweb="select"] svg {{
+        fill: var(--text-secondary) !important;
+    }}
+    .stCheckbox label span {{
+        color: var(--text-body) !important;
+    }}
+    code {{
+        background-color: rgba(99, 102, 241, 0.15) !important;
+        color: var(--brand-indigo) !important;
+        border-radius: 4px;
+        padding: 2px 5px;
+    }}
+
+    /* Streamlit DataFrame Container */
+    div[data-testid="stDataFrame"] {{
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+    }}
 
     /* Hide unnecessary Streamlit widgets */
     [data-testid="stFileChips"] > div > div:not(:last-child),
@@ -542,42 +843,47 @@ VIBRANT_SAAS_CSS = """
     button[title="Search"],
     [data-testid="stHeaderActionElements"],
     a.header-anchor,
-    .header-anchor {
+    .header-anchor {{
         display: none !important;
         visibility: hidden !important;
-    }
+    }}
 
     /* Empty State Box */
-    .saas-empty-container {
-        background-color: #FFFFFF;
+    .saas-empty-container {{
+        background-color: var(--bg-card);
         border: 1px dashed var(--border-subtle);
         border-radius: 10px;
         padding: 36px 24px;
         text-align: center;
         margin-top: 10px;
         margin-bottom: 18px;
-    }
-    .empty-symbol {
+        box-shadow: var(--shadow-card);
+    }}
+    .empty-symbol {{
         font-size: 32px;
         color: var(--brand-indigo);
         margin-bottom: 10px;
-    }
-    .empty-lead {
+    }}
+    .empty-lead {{
         font-size: 15px;
         font-weight: 700;
         color: var(--text-headline);
         margin-bottom: 4px;
-    }
-    .empty-detail {
+    }}
+    .empty-detail {{
         font-size: 13px;
         color: var(--text-muted);
         max-width: 520px;
         margin: 0 auto;
         line-height: 1.5;
-    }
+    }}
 </style>
 """
-st.markdown(VIBRANT_SAAS_CSS, unsafe_allow_html=True)
+
+
+is_dark = st.session_state.theme_mode == "dark"
+st.markdown(get_vibrant_css(is_dark), unsafe_allow_html=True)
+
 
 
 # ------------------------------------------------------------------------------
@@ -599,15 +905,23 @@ def format_bytes(size: int) -> str:
 
 
 def apply_vibrant_theme(fig, height: int = 320):
-    """Apply consistent vibrant SaaS theme to Plotly figures."""
+    """Apply consistent vibrant SaaS / SOC theme to Plotly figures."""
+    is_dark = st.session_state.get("theme_mode", "light") == "dark"
+    paper_bg = "#14223C" if is_dark else "#FFFFFF"
+    plot_bg = "#14223C" if is_dark else "#FFFFFF"
+    font_color = "#F8FAFC" if is_dark else "#0F172A"
+    grid_color = "#1E3156" if is_dark else "#F1F5F9"
+    zeroline_color = "#2E456E" if is_dark else "#E2E8F0"
+    tick_color = "#94A3B8" if is_dark else "#475569"
+
     fig.update_layout(
         height=height,
         margin=dict(l=24, r=24, t=28, b=24),
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
+        paper_bgcolor=paper_bg,
+        plot_bgcolor=plot_bg,
         font=dict(
             family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            color="#0F172A",
+            color=font_color,
             size=12,
         ),
         legend=dict(
@@ -616,20 +930,20 @@ def apply_vibrant_theme(fig, height: int = 320):
             y=-0.3,
             xanchor="center",
             x=0.5,
-            font=dict(size=11, color="#475569"),
+            font=dict(size=11, color=tick_color),
         ),
     )
     fig.update_xaxes(
         showgrid=True,
-        gridcolor="#F1F5F9",
-        zerolinecolor="#E2E8F0",
-        tickfont=dict(color="#475569", size=11),
+        gridcolor=grid_color,
+        zerolinecolor=zeroline_color,
+        tickfont=dict(color=tick_color, size=11),
     )
     fig.update_yaxes(
         showgrid=True,
-        gridcolor="#F1F5F9",
-        zerolinecolor="#E2E8F0",
-        tickfont=dict(color="#475569", size=11),
+        gridcolor=grid_color,
+        zerolinecolor=zeroline_color,
+        tickfont=dict(color=tick_color, size=11),
     )
     return fig
 
@@ -649,8 +963,12 @@ if "active_sample_file" not in st.session_state:
 # 3. HEADER RENDERING
 # ------------------------------------------------------------------------------
 def render_header(status_label: str, status_class: str, dot_class: str):
-    """Render compact, vibrant SaaS header."""
-    col_hdr, col_nav = st.columns([5, 2])
+    """Render compact, vibrant header with live status pill and theme toggle."""
+    is_dark = st.session_state.get("theme_mode", "light") == "dark"
+    theme_badge_text = "🌙 NIGHT MODE" if is_dark else "☀️ LIGHT MODE"
+    theme_badge_cls = "saas-theme-badge-dark" if is_dark else "saas-theme-badge-light"
+
+    col_hdr, col_nav = st.columns([4.2, 2.8])
 
     with col_hdr:
         st.markdown(
@@ -662,6 +980,7 @@ def render_header(status_label: str, status_class: str, dot_class: str):
                         <div class="saas-brand-title">
                             PII Security Gateway
                             <span class="saas-brand-badge">Enterprise Edition</span>
+                            <span class="saas-theme-badge {theme_badge_cls}">{theme_badge_text}</span>
                         </div>
                         <div class="saas-brand-sub">
                             Pre-LLM Document Privacy, Semantic Redaction & Fail-Closed Gate
@@ -681,7 +1000,7 @@ def render_header(status_label: str, status_class: str, dot_class: str):
 
     with col_nav:
         st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-        c_n1, c_n2, c_n3 = st.columns(3)
+        c_n1, c_n2, c_n3, c_n4 = st.columns([1, 1.1, 1.25, 1.05])
         with c_n1:
             if st.button("🔬 Gateway", use_container_width=True, help="Document Inspection Workspace"):
                 st.session_state.active_view = "workspace"
@@ -694,6 +1013,12 @@ def render_header(status_label: str, status_class: str, dot_class: str):
         with c_n3:
             if st.button("📐 Architecture", use_container_width=True, help="Technical Specification & Policy Guide"):
                 st.session_state.active_view = "architecture"
+                st.rerun()
+        with c_n4:
+            theme_btn_label = "☀️ Light" if is_dark else "🌙 Night"
+            theme_btn_help = "Switch to Light Mode" if is_dark else "Switch to Vibrant Night Mode"
+            if st.button(theme_btn_label, use_container_width=True, help=theme_btn_help):
+                st.session_state.theme_mode = "light" if is_dark else "dark"
                 st.rerun()
 
 
@@ -711,7 +1036,7 @@ if st.session_state.get("active_view") == "architecture":
 
     st.markdown(
         """
-        <div style="background-color: #FFFFFF; border: 1px solid var(--border-subtle); border-left: 4px solid var(--brand-indigo); border-radius: 10px; padding: 22px 26px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); line-height: 1.65;">
+        <div class="architecture-doc-card">
             <h3 style="margin-top: 0; font-size: 18px; color: var(--brand-indigo); font-weight: 800;">
                 Zero-Trust Pre-LLM Security Architecture & Policy Specification
             </h3>
@@ -720,7 +1045,7 @@ if st.session_state.get("active_view") == "architecture":
             </p>
 
             <h4 style="font-size: 14.5px; color: var(--text-headline); margin-top: 16px; margin-bottom: 8px;">1. Operational Threat Model</h4>
-            <div style="background-color: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+            <div class="architecture-callout-box">
                 When employees upload business files (contracts, invoices, employee records, support tickets, incident reports) to LLMs, those files routinely contain confidential Personally Identifiable Information (PII) including full names, email addresses, phone numbers, employee badge IDs, credit cards, and government IDs. Transmitting unredacted documents breaches GDPR (Art. 25 & 32), HIPAA (§164.514), and the EU AI Act.
             </div>
 
@@ -759,25 +1084,29 @@ elif st.session_state.get("active_view") == "telemetry" and has_results:
     st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
     c_t1, c_t2 = st.columns(2)
 
+    col_t_is_dark = st.session_state.get("theme_mode", "light") == "dark"
     with c_t1:
         st.markdown(
             """
-            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,0.03);">
-                <div style="font-size:14px; font-weight:700; color:#0F172A; margin-bottom:2px;">PII Classification Distribution</div>
-                <div style="font-size:12px; color:#64748B; margin-bottom:12px;">Entity frequency across detected privacy categories.</div>
+            <div class="telemetry-chart-card">
+                <div style="font-size:14px; font-weight:700; color:var(--text-headline); margin-bottom:2px;">PII Classification Distribution</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Entity frequency across detected privacy categories.</div>
             """,
             unsafe_allow_html=True,
         )
         if type_data:
             df_cat = pd.DataFrame(list(type_data.items()), columns=["Category", "Count"]).sort_values(by="Count", ascending=True)
+            bar_color = "#6366F1" if col_t_is_dark else "#4F46E5"
+            bar_line = "#818CF8" if col_t_is_dark else "#3730A3"
             fig_cat = go.Figure(
                 go.Bar(
                     x=df_cat["Count"],
                     y=df_cat["Category"],
                     orientation="h",
-                    marker=dict(color="#4F46E5", line=dict(color="#3730A3", width=1)),
+                    marker=dict(color=bar_color, line=dict(color=bar_line, width=1.5)),
                     text=df_cat["Count"],
                     textposition="outside",
+                    textfont=dict(color="#F8FAFC" if col_t_is_dark else "#0F172A"),
                 )
             )
             fig_cat = apply_vibrant_theme(fig_cat, height=280)
@@ -790,13 +1119,18 @@ elif st.session_state.get("active_view") == "telemetry" and has_results:
     with c_t2:
         st.markdown(
             """
-            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,0.03);">
-                <div style="font-size:14px; font-weight:700; color:#0F172A; margin-bottom:2px;">Risk Severity Breakdown</div>
-                <div style="font-size:12px; color:#64748B; margin-bottom:12px;">Distribution across finding severity tiers.</div>
+            <div class="telemetry-chart-card">
+                <div style="font-size:14px; font-weight:700; color:var(--text-headline); margin-bottom:2px;">Risk Severity Breakdown</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Distribution across finding severity tiers.</div>
             """,
             unsafe_allow_html=True,
         )
-        color_map = {"CRITICAL": "#DC2626", "HIGH": "#EF4444", "MEDIUM": "#F59E0B", "LOW": "#10B981"}
+        color_map = {
+            "CRITICAL": "#F43F5E" if col_t_is_dark else "#DC2626",
+            "HIGH": "#FB7185" if col_t_is_dark else "#EF4444",
+            "MEDIUM": "#F59E0B" if col_t_is_dark else "#F59E0B",
+            "LOW": "#10B981" if col_t_is_dark else "#10B981",
+        }
         sev_labels, sev_counts, sev_colors = [], [], []
         for sk in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
             if sk in sev_data and sev_data[sk] > 0:
@@ -868,6 +1202,12 @@ else:
         m_low = 0
         m_blocked_rev = 0
 
+    is_dark_ws = st.session_state.get("theme_mode", "light") == "dark"
+    pii_val_color = "#C084FC" if is_dark_ws else "#7C3AED"
+    high_val_color = ("#FB7185" if is_dark_ws else "#EF4444") if m_high > 0 else "var(--text-headline)"
+    low_val_color = "#34D399" if is_dark_ws else "#059669"
+    blocked_val_color = (("#FBBF24" if is_dark_ws else "#D97706") if m_blocked_rev > 0 else ("#34D399" if is_dark_ws else "#059669"))
+
     c_m1, c_m2, c_m3, c_m4, c_m5 = st.columns(5)
 
     with c_m1:
@@ -893,7 +1233,7 @@ else:
                     <span class="metric-label-txt metric-label-violet">Total Detected PII</span>
                     <span class="metric-icon-box">🔍</span>
                 </div>
-                <div class="metric-main-val" style="color: #7C3AED;">{m_pii}</div>
+                <div class="metric-main-val" style="color: {pii_val_color};">{m_pii}</div>
                 <div class="metric-sub-txt">Flagged private entities</div>
             </div>
             """,
@@ -908,7 +1248,7 @@ else:
                     <span class="metric-label-txt metric-label-rose">High-Risk Findings</span>
                     <span class="metric-icon-box">⚠️</span>
                 </div>
-                <div class="metric-main-val" style="color: {'#EF4444' if m_high > 0 else 'var(--text-headline)'};">{m_high}</div>
+                <div class="metric-main-val" style="color: {high_val_color};">{m_high}</div>
                 <div class="metric-sub-txt">Critical & High risk findings</div>
             </div>
             """,
@@ -923,7 +1263,7 @@ else:
                     <span class="metric-label-txt metric-label-emerald">Low-Risk Documents</span>
                     <span class="metric-icon-box">🛡️</span>
                 </div>
-                <div class="metric-main-val" style="color: #059669;">{m_low}</div>
+                <div class="metric-main-val" style="color: {low_val_color};">{m_low}</div>
                 <div class="metric-sub-txt">Safe / low exposure profile</div>
             </div>
             """,
@@ -938,7 +1278,7 @@ else:
                     <span class="metric-label-txt metric-label-amber">Review or Blocked</span>
                     <span class="metric-icon-box">🛑</span>
                 </div>
-                <div class="metric-main-val" style="color: {'#D97706' if m_blocked_rev > 0 else '#059669'};">{m_blocked_rev}</div>
+                <div class="metric-main-val" style="color: {blocked_val_color};">{m_blocked_rev}</div>
                 <div class="metric-sub-txt">Gate holds & policy rejections</div>
             </div>
             """,
@@ -1122,36 +1462,36 @@ else:
         )
 
         # 5-Stage Stepper Grid
-        s5_cls = "step-box-cell"
+        s5_cls = "step-cell-pass" if (vr and vr.passed) else ("step-cell-fail" if vr else "")
         s5_tag = "Stage 05 • Validation"
         s5_status = "0 Residual (Passed)" if (vr and vr.passed) else (f"{residual_count} Leaks (Failed)" if vr else "Pending")
-        s5_style = "border-color: #A7F3D0; background-color: #F8FCF9;" if (vr and vr.passed) else ("border-color: #FECACA; background-color: #FEF2F2;" if vr else "")
+        s5_tag_color = "var(--safe-green)" if (vr and vr.passed) else "var(--blocked-red)"
 
         st.markdown(
             f"""
             <div class="stepper-5stage-grid">
-                <div class="step-box-cell" style="border-color: #C7D2FE; background-color: #FAFAFF;">
+                <div class="step-box-cell step-cell-extract">
                     <div class="step-tag-text step-done-tag">Stage 01 • Extraction</div>
                     <div class="step-title-text">Structural Parsing</div>
                     <div class="step-sub-text">{len(selected_doc.blocks)} blocks preserved</div>
                 </div>
-                <div class="step-box-cell" style="border-color: #DDD6FE; background-color: #FAF5FF;">
-                    <div class="step-tag-text" style="color: #7C3AED;">Stage 02 • Detection</div>
+                <div class="step-box-cell step-cell-detect">
+                    <div class="step-tag-text" style="color: var(--brand-violet);">Stage 02 • Detection</div>
                     <div class="step-title-text">Tri-Engine Discovery</div>
                     <div class="step-sub-text">{len(selected_doc.pii_findings)} entities flagged</div>
                 </div>
-                <div class="step-box-cell" style="border-color: #FED7AA; background-color: #FFFDF9;">
-                    <div class="step-tag-text" style="color: #EA580C;">Stage 03 • Risk Assessment</div>
+                <div class="step-box-cell step-cell-risk">
+                    <div class="step-tag-text" style="color: var(--review-amber);">Stage 03 • Risk Assessment</div>
                     <div class="step-title-text">Risk Tier: {risk_tier}</div>
                     <div class="step-sub-text">Calculated Score: {risk_score}/100</div>
                 </div>
-                <div class="step-box-cell" style="border-color: #BFDBFE; background-color: #F8FAFF;">
-                    <div class="step-tag-text" style="color: #2563EB;">Stage 04 • Redaction</div>
+                <div class="step-box-cell step-cell-redact">
+                    <div class="step-tag-text" style="color: var(--brand-blue);">Stage 04 • Redaction</div>
                     <div class="step-title-text">Semantic Replacement</div>
                     <div class="step-sub-text">{replacements_count} surrogate keys</div>
                 </div>
-                <div class="step-box-cell" style="{s5_style}">
-                    <div class="step-tag-text" style="color: {'#059669' if (vr and vr.passed) else '#DC2626'};">{s5_tag}</div>
+                <div class="step-box-cell {s5_cls}">
+                    <div class="step-tag-text" style="color: {s5_tag_color};">{s5_tag}</div>
                     <div class="step-title-text">Secondary Gate</div>
                     <div class="step-sub-text">{s5_status}</div>
                 </div>
@@ -1168,7 +1508,7 @@ else:
                 f"""
                 <div class="verdict-banner-card verdict-bg-sanitized">
                     <div class="verdict-primary-col">
-                        <div class="verdict-icon-symbol" style="color: #059669;">✓</div>
+                        <div class="verdict-icon-symbol" style="color: var(--safe-green);">✓</div>
                         <div>
                             <div class="verdict-title-headline">SECURITY VERDICT: SANITIZED — APPROVED FOR DOWNSTREAM LLM INGESTION</div>
                             <div class="verdict-body-desc">
@@ -1187,11 +1527,11 @@ else:
                         </div>
                         <div class="verdict-metric-pill">
                             <div class="v-pill-lbl">Risk Tier</div>
-                            <div class="v-pill-num" style="color: #059669;">{risk_tier}</div>
+                            <div class="v-pill-num" style="color: var(--safe-green);">{risk_tier}</div>
                         </div>
                         <div class="verdict-metric-pill">
                             <div class="v-pill-lbl">Residual</div>
-                            <div class="v-pill-num" style="color: #059669;">0</div>
+                            <div class="v-pill-num" style="color: var(--safe-green);">0</div>
                         </div>
                     </div>
                 </div>
@@ -1203,7 +1543,7 @@ else:
                 f"""
                 <div class="verdict-banner-card verdict-bg-blocked">
                     <div class="verdict-primary-col">
-                        <div class="verdict-icon-symbol" style="color: #DC2626;">✕</div>
+                        <div class="verdict-icon-symbol" style="color: var(--blocked-red);">✕</div>
                         <div>
                             <div class="verdict-title-headline">SECURITY VERDICT: BLOCKED — FAIL-CLOSED ENFORCEMENT TRIGGERED</div>
                             <div class="verdict-body-desc">
@@ -1222,11 +1562,11 @@ else:
                         </div>
                         <div class="verdict-metric-pill">
                             <div class="v-pill-lbl">Risk Tier</div>
-                            <div class="v-pill-num" style="color: #DC2626;">{risk_tier}</div>
+                            <div class="v-pill-num" style="color: var(--blocked-red);">{risk_tier}</div>
                         </div>
                         <div class="verdict-metric-pill">
                             <div class="v-pill-lbl">Residual</div>
-                            <div class="v-pill-num" style="color: #DC2626;">{residual_count}</div>
+                            <div class="v-pill-num" style="color: var(--blocked-red);">{residual_count}</div>
                         </div>
                     </div>
                 </div>
@@ -1238,7 +1578,7 @@ else:
                 f"""
                 <div class="verdict-banner-card verdict-bg-review">
                     <div class="verdict-primary-col">
-                        <div class="verdict-icon-symbol" style="color: #D97706;">⚠</div>
+                        <div class="verdict-icon-symbol" style="color: var(--review-amber);">⚠</div>
                         <div>
                             <div class="verdict-title-headline">SECURITY VERDICT: REVIEW REQUIRED — MANUAL CLEARANCE MANDATED</div>
                             <div class="verdict-body-desc">
@@ -1257,7 +1597,7 @@ else:
                         </div>
                         <div class="verdict-metric-pill">
                             <div class="v-pill-lbl">Risk Tier</div>
-                            <div class="v-pill-num" style="color: #D97706;">{risk_tier}</div>
+                            <div class="v-pill-num" style="color: var(--review-amber);">{risk_tier}</div>
                         </div>
                     </div>
                 </div>
@@ -1347,15 +1687,16 @@ else:
 
         # TAB 2: INTELLIGENT RISK ASSESSMENT
         with tab_risk:
-            st.markdown("<div style='font-size: 13.5px; font-weight: 700; color: #0F172A; margin-bottom: 8px;'>Explainable Document Privacy Risk Breakdown:</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 13.5px; font-weight: 700; color: var(--text-headline); margin-bottom: 8px;'>Explainable Document Privacy Risk Breakdown:</div>", unsafe_allow_html=True)
             
+            risk_tier_color = "var(--blocked-red)" if risk_tier in ('CRITICAL', 'HIGH') else ("var(--review-amber)" if risk_tier == 'MODERATE' else "var(--safe-green)")
             c_rk1, c_rk2, c_rk3, c_rk4 = st.columns(4)
             with c_rk1:
                 st.markdown(
                     f"""
-                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:12px 14px; text-align:center;">
-                        <div style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase;">Overall Risk Tier</div>
-                        <div style="font-size:22px; font-weight:800; color:{'#DC2626' if risk_tier in ('CRITICAL', 'HIGH') else ('#D97706' if risk_tier == 'MODERATE' else '#059669')}; margin-top:2px;">{risk_tier}</div>
+                    <div class="risk-metric-box">
+                        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Overall Risk Tier</div>
+                        <div style="font-size:22px; font-weight:800; color:{risk_tier_color}; margin-top:2px;">{risk_tier}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1363,9 +1704,9 @@ else:
             with c_rk2:
                 st.markdown(
                     f"""
-                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:12px 14px; text-align:center;">
-                        <div style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase;">Calculated Score</div>
-                        <div style="font-size:22px; font-weight:800; color:#4F46E5; margin-top:2px;">{risk_score} / 100</div>
+                    <div class="risk-metric-box">
+                        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Calculated Score</div>
+                        <div style="font-size:22px; font-weight:800; color:var(--brand-indigo); margin-top:2px;">{risk_score} / 100</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1373,9 +1714,9 @@ else:
             with c_rk3:
                 st.markdown(
                     f"""
-                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:12px 14px; text-align:center;">
-                        <div style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase;">Distinct Entities</div>
-                        <div style="font-size:22px; font-weight:800; color:#0F172A; margin-top:2px;">{risk_data.get('distinct_entities_count', 0)}</div>
+                    <div class="risk-metric-box">
+                        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Distinct Entities</div>
+                        <div style="font-size:22px; font-weight:800; color:var(--text-headline); margin-top:2px;">{risk_data.get('distinct_entities_count', 0)}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1383,16 +1724,16 @@ else:
             with c_rk4:
                 st.markdown(
                     f"""
-                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:12px 14px; text-align:center;">
-                        <div style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase;">Regulated Credentials</div>
-                        <div style="font-size:22px; font-weight:800; color:{'#DC2626' if risk_data.get('critical_identifiers_present') else '#059669'}; margin-top:2px;">{'YES' if risk_data.get('critical_identifiers_present') else 'NO'}</div>
+                    <div class="risk-metric-box">
+                        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Regulated Credentials</div>
+                        <div style="font-size:22px; font-weight:800; color:{'var(--blocked-red)' if risk_data.get('critical_identifiers_present') else 'var(--safe-green)'}; margin-top:2px;">{'YES' if risk_data.get('critical_identifiers_present') else 'NO'}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: #334155;'>Risk Factors & Justification:</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: var(--text-headline);'>Risk Factors & Justification:</div>", unsafe_allow_html=True)
             for factor in risk_data.get("risk_factors", []):
                 st.markdown(f"- **Evidence**: {factor}")
 
@@ -1405,7 +1746,7 @@ else:
                 col_prev_txt, col_prev_dict = st.columns([3, 2])
 
                 with col_prev_txt:
-                    st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: #0F172A; margin-bottom: 6px;'>Sanitized Document Content (Semantic Surrogate Tokens Preserved):</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: var(--text-headline); margin-bottom: 6px;'>Sanitized Document Content (Semantic Surrogate Tokens Preserved):</div>", unsafe_allow_html=True)
                     st.markdown(f'<div class="preview-doc-box">{selected_doc.redaction_result.redacted_full_text}</div>', unsafe_allow_html=True)
 
                     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
@@ -1420,7 +1761,7 @@ else:
                         st.warning("⚠️ Sanitized artifact download is locked because post-redaction validation did not certify clean status.")
 
                 with col_prev_dict:
-                    st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: #0F172A; margin-bottom: 6px;'>Deterministic Surrogate Key Mapping Registry:</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='font-size: 12.5px; font-weight: 700; color: var(--text-headline); margin-bottom: 6px;'>Deterministic Surrogate Key Mapping Registry:</div>", unsafe_allow_html=True)
                     mapping_entries = []
                     for raw_key, tag in selected_doc.redaction_result.entity_mappings.items():
                         mapping_entries.append({
@@ -1439,10 +1780,10 @@ else:
         # TAB 4: POST-REDACTION VALIDATION AUDIT
         with tab_validation:
             if vr:
-                stat_badge_color = "#059669" if vr.passed else "#DC2626"
+                stat_badge_color = "var(--safe-green)" if vr.passed else "var(--blocked-red)"
                 st.markdown(
                     f"""
-                    <div style="background-color: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px 20px; margin-bottom: 14px;">
+                    <div class="validation-audit-card">
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                             <tr style="border-bottom: 1px solid var(--border-subtle);">
                                 <td style="padding: 8px 0; color: var(--text-muted); font-weight: 600;">Secondary Validation Gate:</td>
@@ -1506,9 +1847,9 @@ else:
             for b in selected_doc.blocks:
                 st.markdown(
                     f"""
-                    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:3px solid #6366F1; border-radius:4px; padding:10px 14px; margin-bottom:8px;">
-                        <div style="font-size:11px; font-weight:600; color:#64748B; margin-bottom:4px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;">Coordinate: {b.location} | Type: {b.block_type} | Index: {b.order}</div>
-                        <div style="font-size:12.5px; color:#1E293B; white-space:pre-wrap; line-height:1.5;">{b.text}</div>
+                    <div class="raw-block-card">
+                        <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:4px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;">Coordinate: {b.location} | Type: {b.block_type} | Index: {b.order}</div>
+                        <div style="font-size:12.5px; color:var(--text-body); white-space:pre-wrap; line-height:1.5;">{b.text}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1516,7 +1857,7 @@ else:
 
         # TAB 7: COMPLIANCE EXPORTS
         with tab_exports:
-            st.markdown("<div style='font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 8px;'>Export SIEM-Ready Audit Telemetry & Forensic Traceability Matrix:</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 13px; font-weight: 700; color: var(--text-headline); margin-bottom: 8px;'>Export SIEM-Ready Audit Telemetry & Forensic Traceability Matrix:</div>", unsafe_allow_html=True)
             c_exp1, c_exp2 = st.columns(2)
             with c_exp1:
                 json_data = ReportGenerator.generate_json_report(results)
