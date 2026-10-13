@@ -22,6 +22,7 @@ from detection.risk_classifier import RiskClassifier
 from redaction.redactor import PIIRedactor
 from redaction.validator import PostRedactionValidator
 from utils.helpers import calculate_file_hash
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,15 @@ logger = logging.getLogger(__name__)
 class GatewayPipeline:
     """Coordinates the end-to-end pre-LLM security gateway workflow."""
 
-    def __init__(self, spacy_model: str = "en_core_web_sm"):
-        self.pii_engine = PIIEngine(spacy_model=spacy_model)
+    def __init__(
+        self,
+        spacy_model: str = "en_core_web_sm",
+        custom_allowlist: Optional[List[str]] = None
+    ):
+        allowlist = list(getattr(settings, "DEFAULT_ENTITY_ALLOWLIST", []))
+        if custom_allowlist:
+            allowlist.extend(custom_allowlist)
+        self.pii_engine = PIIEngine(spacy_model=spacy_model, custom_allowlist=allowlist)
         self.redactor = PIIRedactor()
         self.validator = PostRedactionValidator(pii_engine=self.pii_engine)
 

@@ -397,3 +397,58 @@ def test_intelligent_risk_classification():
     assert assess_credit["critical_identifiers_present"] is True
 
 
+def test_tech_tools_and_headings_not_flagged_as_person():
+    """Ensure technical tools, cloud platforms, section headers, and clubs are not misclassified as PERSON."""
+    ner = NERDetector()
+    engine = PIIEngine()
+
+    test_items = [
+        ("ABOUT ME", "page_1_block_9", 9),
+        ("Microsoft Azure", "page_1_block_20", 20),
+        ("Burp Suite", "page_1_block_26", 26),
+        ("Operating System Dashboard", "page_2_block_2", 2),
+        ("Docker", "page_2_block_14", 14),
+        ("Docker", "page_2_block_18", 18),
+        ("Docker Compose", "page_2_block_18", 18),
+        ("Ollama", "page_2_block_25", 25),
+        ("Cloud Storage", "page_2_block_30", 30),
+        ("Prodinno Club", "page_3_block_7", 7),
+    ]
+
+    for text, loc, order in test_items:
+        findings = ner.detect(text, "doc_test", "resume.pdf", loc, order)
+        assert len(findings) == 0, f"Expected 0 findings for '{text}', got: {findings}"
+
+    # Also test mixed resume paragraph
+    mixed_text = (
+        "About Me\n"
+        "Proficient in Docker, Docker Compose, Ollama, Burp Suite, and Microsoft Azure.\n"
+        "Developed Operating System Dashboard integrated with Cloud Storage.\n"
+        "Lead coordinator at Prodinno Club.\n"
+        "Contact: John Smith at john@example.com"
+    )
+    findings = engine.detect_raw_text(mixed_text)
+    person_findings = [f.text for f in findings if f.pii_type == PIIType.PERSON]
+
+    assert "John Smith" in person_findings
+    for non_person in ["Docker", "Ollama", "Burp Suite", "Microsoft Azure", "Operating System Dashboard", "Cloud Storage", "Prodinno Club", "About Me"]:
+        assert non_person not in person_findings
+
+
+def test_custom_allowlist_filtering():
+    """Verify custom allowlist terms are cleanly ignored across all detectors."""
+    engine = PIIEngine(custom_allowlist=["CustomInternalTool", "ProjectX", "SpecialOrg"])
+    text = (
+        "Lead developer for CustomInternalTool and ProjectX under SpecialOrg.\n"
+        "Contact person: Jane Doe\n"
+    )
+    findings = engine.detect_raw_text(text)
+    flagged_texts = [f.text for f in findings]
+
+    assert "CustomInternalTool" not in flagged_texts
+    assert "ProjectX" not in flagged_texts
+    assert "SpecialOrg" not in flagged_texts
+    assert "Jane Doe" in flagged_texts
+
+
+

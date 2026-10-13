@@ -890,9 +890,10 @@ st.markdown(get_vibrant_css(is_dark), unsafe_allow_html=True)
 # 2. APPLICATION INITIALIZATION & HELPERS
 # ------------------------------------------------------------------------------
 @st.cache_resource
-def get_pipeline() -> GatewayPipeline:
-    """Initialize singleton GatewayPipeline instance."""
-    return GatewayPipeline()
+def get_pipeline(custom_allowlist_tuple: tuple = ()) -> GatewayPipeline:
+    """Initialize GatewayPipeline instance with custom allowlist support."""
+    return GatewayPipeline(custom_allowlist=list(custom_allowlist_tuple))
+
 
 
 def format_bytes(size: int) -> str:
@@ -1350,6 +1351,22 @@ else:
                 st.session_state.analysis_results = []
                 st.rerun()
 
+    with st.expander("🛡️ Custom Entity Allowlist / Excluded Terms", expanded=False):
+        st.markdown(
+            "<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 6px;'>"
+            "Specify custom keywords, tools, proprietary project names, or section titles (comma-separated) "
+            "that the Security Gateway should never detect or redact as PII."
+            "</p>",
+            unsafe_allow_html=True,
+        )
+        st.text_input(
+            "Ignored Terms (Comma-separated)",
+            value="",
+            placeholder="e.g. MyCustomTool, InternalProjectName, CustomClub",
+            key="custom_allowlist_input",
+            help="Any entity matching these terms will be excluded from PII detection.",
+        )
+
     # Active Staged Artifact Card
     staged_payload: Optional[Tuple[str, bytes]] = None
     staged_meta: Optional[Dict[str, str]] = None
@@ -1401,7 +1418,10 @@ else:
             fname, fbytes = staged_payload
             prog_bar = st.progress(0, text=f"Initializing security pipeline for {fname}...")
             
-            pipeline = get_pipeline()
+            custom_terms = tuple(
+                t.strip() for t in st.session_state.get("custom_allowlist_input", "").split(",") if t.strip()
+            )
+            pipeline = get_pipeline(custom_terms)
             prog_bar.progress(20, text="1/5 Extracting structural document blocks...")
             time.sleep(0.04)
             prog_bar.progress(45, text="2/5 Executing hybrid tri-engine PII discovery...")

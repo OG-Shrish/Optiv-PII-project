@@ -4,7 +4,8 @@ Merges overlapping findings, calculates confidence scores, boosts confidence on 
 agreement, and applies internal risk severity classification.
 """
 import logging
-from typing import List, Dict, Tuple
+import re
+from typing import List, Dict, Tuple, Optional, Set
 
 from models.schemas import (
     DocumentBlock,
@@ -31,9 +32,13 @@ SEVERITY_ORDER = {
 class PIIEngine:
     """Orchestrates hybrid PII detection across document blocks."""
 
-    def __init__(self, spacy_model: str = "en_core_web_sm"):
+    def __init__(self, spacy_model: str = "en_core_web_sm", custom_allowlist: Optional[List[str]] = None):
+        self.custom_allowlist: Set[str] = (
+            {w.strip().lower() for w in custom_allowlist if w and w.strip()}
+            if custom_allowlist else set()
+        )
         self.regex_detector = RegexDetector()
-        self.ner_detector = NERDetector(model_name=spacy_model)
+        self.ner_detector = NERDetector(model_name=spacy_model, custom_allowlist=self.custom_allowlist)
         self.context_detector = ContextDetector()
 
     def detect_in_block(self, block: DocumentBlock) -> List[PIIFinding]:
@@ -75,6 +80,18 @@ class PIIEngine:
 
         # Merge overlapping findings
         merged = self._merge_findings(raw_findings, block.text)
+
+        # Filter out any entities explicitly in custom_allowlist
+        if self.custom_allowlist:
+            filtered: List[PIIFinding] = []
+            for f in merged:
+                norm_text = f.text.strip().lower()
+                words = re.findall(r"[A-Za-z]+", norm_text)
+                if norm_text in self.custom_allowlist or any(w in self.custom_allowlist for w in words):
+                    continue
+                filtered.append(f)
+            return filtered
+
         return merged
 
     def detect_blocks(self, blocks: List[DocumentBlock]) -> List[PIIFinding]:

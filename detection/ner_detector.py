@@ -52,11 +52,45 @@ STRICT_NON_PERSON_WORDS = {
     "routing", "router", "subnet", "firewall", "schema", "schemas", "query", "queries",
     "index", "indices", "dataset", "datasets", "benchmark", "benchmarks", "metric", "metrics",
     "precision", "recall", "accuracy", "runtime", "thread", "threads", "algebra",
-    # Determiners, modifiers, structural words
+    # Determiners, modifiers, pronouns, prepositions, structural words
     "other", "another", "all", "any", "each", "every", "some", "few", "more", "less",
     "many", "much", "add", "addon", "add-on", "add-ons", "addons", "additional", "added",
     "extra", "new", "old", "first", "last", "next", "previous", "prior", "total", "subtotal",
     "net", "standard", "basic", "special", "general", "main", "sub",
+    "about", "me", "my", "myself", "mine", "we", "us", "our", "ours", "you", "your", "yours",
+    "he", "him", "his", "she", "her", "hers", "it", "its", "they", "them", "their", "theirs",
+    "who", "whom", "whose", "what", "which", "that", "this", "these", "those",
+    "with", "without", "within", "for", "from", "into", "onto", "upon", "over", "under",
+    "above", "below", "between", "among", "through", "during", "before", "after",
+    "and", "or", "nor", "but", "yet", "so", "both", "either", "neither",
+    "as", "at", "by", "in", "of", "on", "to", "up", "down", "off", "out", "via", "per",
+    # Cloud, DevOps, Infrastructure, Containers & Platforms
+    "docker", "compose", "ollama", "burp", "suite", "azure", "microsoft", "aws", "amazon",
+    "gcp", "google", "cloud", "storage", "operating", "dashboard", "dashboards",
+    "kubernetes", "k8s", "helm", "podman", "vagrant", "terraform", "ansible", "puppet",
+    "chef", "jenkins", "gitlab", "bitbucket", "circleci", "travisci", "argocd", "openstack",
+    "cloudflare", "digitalocean", "heroku", "vercel", "netlify", "supabase", "firebase",
+    "s3", "blob", "bucket", "container", "containers", "serverless",
+    # Security, Pentesting, Tools & Concepts
+    "metasploit", "wireshark", "nmap", "nessus", "snort", "suricata", "owasp", "zap",
+    "splunk", "qradar", "crowdstrike", "sentinel", "siem", "soc", "pentest", "pentesting",
+    "vulnerability", "vulnerabilities",
+    # AI, Machine Learning, Data Science & LLMs
+    "huggingface", "langchain", "llamaindex", "tensorflow", "pytorch", "torch", "keras",
+    "scikit", "sklearn", "pandas", "numpy", "scipy", "matplotlib", "seaborn", "opencv",
+    "spacy", "nltk", "fastai", "xgboost", "lightgbm", "catboost", "openai", "chatgpt",
+    "claude", "gemini", "mistral", "llama", "deepseek", "groq", "vllm", "lora", "rag",
+    "nlp", "ner", "llm", "llms", "model", "models",
+    # Programming Languages, Frameworks & Libraries
+    "python", "java", "javascript", "typescript", "rust", "golang", "ruby", "php", "swift",
+    "kotlin", "scala", "dart", "solidity", "react", "nextjs", "vue", "nuxtjs", "angular",
+    "svelte", "nodejs", "node", "express", "nestjs", "django", "flask", "fastapi", "spring",
+    "aspnet", "dotnet", "laravel", "rails", "flutter", "electron", "tailwind", "bootstrap",
+    "redux", "graphql", "rest", "restful", "api", "apis", "grpc", "websocket", "json", "xml",
+    # Databases & Big Data
+    "sql", "nosql", "mysql", "postgresql", "postgres", "mongodb", "mongo", "sqlite", "redis",
+    "elasticsearch", "opensearch", "cassandra", "dynamodb", "mariadb", "neo4j", "couchdb",
+    "snowflake", "bigquery", "kafka", "rabbitmq", "celery", "activemq", "spark", "hadoop",
     # Document structure & labels
     "table", "row", "column", "col", "slide", "section", "header", "footer",
     "paragraph", "item", "items", "list", "status", "type", "category",
@@ -137,6 +171,18 @@ STRICT_NON_PERSON_WORDS = {
     "figure", "figures", "diagram", "diagrams", "illustration", "illustrations"
 }
 
+# Multi-word non-person phrases (normalized lowercase) that should never be classified as PERSON
+NON_PERSON_PHRASES = {
+    "about me", "about us", "microsoft azure", "burp suite", "operating system dashboard",
+    "operating system", "operating systems", "system dashboard", "docker compose",
+    "cloud storage", "prodinno club", "google cloud", "amazon web services",
+    "technical skills", "work experience", "professional experience", "project details",
+    "academic projects", "personal projects", "education summary", "career objective",
+    "executive summary", "contact info", "contact details", "full stack developer",
+    "software engineer", "data scientist", "machine learning engineer", "devops engineer",
+    "system architecture", "database management", "cloud computing", "information technology"
+}
+
 # Common English words/labels that are non-person when appearing alone as a single word or label,
 # but which CAN form valid multi-word personal names (e.g., 'Larry Page', 'Bill Gates', 'Brian May').
 SINGLE_WORD_NON_PERSON_WORDS = {
@@ -153,10 +199,11 @@ TECHNICAL_HEAD_NOUNS = {
     "components", "matrices", "vertices", "algorithms", "equations", "functions",
     "variables", "constraints", "subgraphs", "layers", "models", "methods",
     "circuits", "signals", "packets", "protocols", "parameters", "structures",
-    "operations", "systems", "tables", "queues", "stacks", "arrays", "sets",
+    "operations", "systems", "system", "tables", "queues", "stacks", "arrays", "sets",
     "subsets", "clusters", "distributions", "heuristics", "iterations", "processes",
     "threads", "caches", "buffers", "properties", "papers", "questions", "answers",
-    "problems", "solutions", "exercises", "assignments", "modules", "units", "chapters"
+    "problems", "solutions", "exercises", "assignments", "modules", "units", "chapters",
+    "dashboard", "dashboards", "storage", "cloud"
 }
 
 # Corporate & organizational suffixes to distinguish organizations from person names
@@ -165,7 +212,13 @@ ORG_SUFFIX_WORDS = {
     "pvt", "private", "gmbh", "co", "company", "enterprises", "holdings",
     "technologies", "solutions", "systems", "services", "software", "bank",
     "air", "airlines", "airways", "hospital", "college", "university", "school",
-    "institute", "foundation", "group", "industries", "motors", "labs", "laboratory"
+    "institute", "foundation", "group", "industries", "motors", "labs", "laboratory",
+    "club", "clubs", "society", "societies", "chapter", "chapters", "community", "communities",
+    "association", "associations", "committee", "committees", "council", "councils", "forum",
+    "forums", "board", "boards", "union", "unions", "guild", "guilds", "alliance", "alliances",
+    "consortium", "consortiums", "network", "networks", "cell", "cells", "team", "teams",
+    "squad", "squads", "initiative", "initiatives", "hub", "wing", "circle", "organization",
+    "organisation", "branch", "department", "dept"
 }
 
 # Union set preserved for backward compatibility
@@ -203,10 +256,17 @@ KNOWN_NORP_WORDS = {
 }
 
 
-def is_valid_person_entity(ent_text: str) -> bool:
+def is_valid_person_entity(ent_text: str, custom_allowlist: Optional[set] = None) -> bool:
     """Validate that an NER candidate entity represents a genuine person name."""
     cleaned = ent_text.strip()
     if len(cleaned) < 2 or len(cleaned) > 60:
+        return False
+    norm = cleaned.lower()
+    # Check custom user allowlist
+    if custom_allowlist and (norm in custom_allowlist):
+        return False
+    # Check known non-person multi-word phrases
+    if norm in NON_PERSON_PHRASES:
         return False
     # Person names never span multiple lines
     if "\n" in cleaned or "\r" in cleaned:
@@ -222,6 +282,9 @@ def is_valid_person_entity(ent_text: str) -> bool:
     if not words or len(words) > 5:
         return False
 
+    # Check against custom allowlist individual words
+    if custom_allowlist and any(w.lower() in custom_allowlist for w in words):
+        return False
     # Check against strictly non-person words
     if any(w.lower() in STRICT_NON_PERSON_WORDS for w in words):
         return False
@@ -271,7 +334,7 @@ def is_valid_person_entity(ent_text: str) -> bool:
         return False
 
     # Reject if combined string is in strict dictionary
-    if cleaned.lower().replace(" ", "").replace("-", "") in STRICT_NON_PERSON_WORDS:
+    if norm.replace(" ", "").replace("-", "") in STRICT_NON_PERSON_WORDS:
         return False
 
     return True
@@ -302,7 +365,7 @@ def has_personal_document_context(text: str) -> bool:
     return False
 
 
-def is_standalone_name_line(line: str) -> bool:
+def is_standalone_name_line(line: str, custom_allowlist: Optional[set] = None) -> bool:
     """Validate whether a dedicated standalone line represents a personal candidate name."""
     cleaned = line.strip()
     if "\n" in cleaned or "\r" in cleaned:
@@ -311,14 +374,15 @@ def is_standalone_name_line(line: str) -> bool:
     if not (2 <= len(words) <= 4):
         return False
     # Line must satisfy all personal entity validation rules
-    return is_valid_person_entity(cleaned)
+    return is_valid_person_entity(cleaned, custom_allowlist=custom_allowlist)
 
 
 class NERDetector:
     """Detects Named Entities using spaCy's English model with safety fallbacks."""
 
-    def __init__(self, model_name: str = "en_core_web_sm"):
+    def __init__(self, model_name: str = "en_core_web_sm", custom_allowlist: Optional[set] = None):
         self.model_name = model_name
+        self.custom_allowlist = {w.strip().lower() for w in custom_allowlist if w and w.strip()} if custom_allowlist else set()
         self.nlp = None
         self.is_available = False
         self._load_model()
@@ -367,7 +431,7 @@ class NERDetector:
             is_person_label = ent.label_ == "PERSON"
             is_misclassified_norp = ent.label_ == "NORP" and ent_text.lower() not in KNOWN_NORP_WORDS
             if is_person_label or is_misclassified_norp:
-                if not is_valid_person_entity(ent_text):
+                if not is_valid_person_entity(ent_text, custom_allowlist=self.custom_allowlist):
                     continue
 
                 findings.append(
@@ -452,7 +516,7 @@ class NERDetector:
             )
             for match in name_line_pattern.finditer(text):
                 candidate = match.group(1).strip()
-                if is_standalone_name_line(candidate):
+                if is_standalone_name_line(candidate, custom_allowlist=self.custom_allowlist):
                     start_c = match.start(1)
                     end_c = match.end(1)
                     # Avoid duplicate if a PERSON finding already covers this exact span or a superset

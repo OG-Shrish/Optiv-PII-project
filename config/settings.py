@@ -53,3 +53,17 @@ REGEX_PATTERNS = {
     "GOVERNMENT_ID_SSN": r"\b\d{3}-\d{2}-\d{4}\b",
     "GOVERNMENT_ID_AADHAAR": r"\b\d{4}\s?\d{4}\s?\d{4}\b",
 }
+
+# Default Entity Allowlist (words or phrases that should never be flagged as PII)
+DEFAULT_ENTITY_ALLOWLIST = [
+    "about me",
+    "microsoft azure",
+    "burp suite",
+    "operating system dashboard",
+    "docker",
+    "docker compose",
+    "ollama",
+    "cloud storage",
+    "prodinno club",
+]
+
